@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>仮想通貨プロンプト・コピーランチャー（X Premium長文｜バイリンガル｜やさしい×テクニカル｜スマホ最適化）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<style>
+  :root{
+    --brand:#1d9bf0; --bg:#ffffff; --fg:#0f172a; --muted:#475569; --bd:#e5e7eb; --ok:#16a34a; --warn:#ef4444;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif}
+  header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--bd)}
+  .wrap{max-width:820px;margin:0 auto;padding:14px 16px}
+  h1{font-size:18px;margin:0 0 6px}
+  p.lead{font-size:14px;color:var(--muted);margin:0 0 10px;line-height:1.5}
+  .controls{display:grid;grid-template-columns:1fr;gap:10px;margin:10px 0 16px}
+  .control{border:1px solid var(--bd);border-radius:12px;padding:10px;background:#fff}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+  select,input[type="date"],input[type="text"]{
+    width:100%;border:1px solid var(--bd);border-radius:10px;padding:12px 12px;font-size:16px;background:#fff;color:var(--fg)
+  }
+  .grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px}
+  .card{border:1px solid var(--bd);border-radius:14px;background:#fff;padding:14px}
+  .card h2{font-size:16px;margin:0 0 8px}
+  .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#f1f5f9;color:#0f172a;border:1px solid var(--bd);margin-left:6px}
+  .btn{
+    width:100%;appearance:none;border:none;background:var(--brand);color:#fff;
+    padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:16px
+  }
+  .btn.secondary{background:#0f172a}
+  .btn:active{opacity:.92;transform:translateY(1px)}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .toast{
+    position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    background:#0f172a;color:#fff;border-radius:12px;padding:10px 14px;font-size:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:.25s
+  }
+  .toast.show{opacity:1;pointer-events:auto}
+  .output{
+    border:1px solid var(--bd);border-radius:14px;background:#fff;padding:12px;margin:10px 0 90px
+  }
+  textarea{
+    width:100%;min-height:180px;border:1px solid var(--bd);border-radius:10px;
+    padding:12px;font-size:16px;line-height:1.6;resize:vertical
+  }
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  @media (min-width:740px){ .row{grid-template-columns:1fr 1fr 1fr} }
+  .small{font-size:12px;color:var(--muted)}
+  .danger{color:var(--warn);font-weight:700}
+  footer{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--bd)}
+  footer .wrap{padding:10px 16px}
+  footer p{margin:0;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>X Premium長文：バイリンガル（日本語＋English）｜やさしい×テクニカル｜スマホ最適化ランチャー</h1>
+      <p class="lead">①カテゴリの「📋 プロンプトをコピー」を押す → ②AIに貼って生成 → ③下の「生成文貼り付け欄」にペースト → 「Xに貼る用にコピー」でワンタップ転送。</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- 操作パネル -->
+    <section class="controls">
+      <div class="control">
+        <label for="date">対象日（JST）</label>
+        <input id="date" type="date" />
+      </div>
+      <div class="control">
+        <label for="window">時間ウィンドウ</label>
+        <select id="window">
+          <option value="strict">本日(JST)のみ（厳格）</option>
+          <option value="pragmatic" selected>実務：本日＋直近12h（推奨）</option>
+          <option value="flex">柔軟：本日＋直近24h</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="depth">テクニカル深度</label>
+        <select id="depth">
+          <option value="compact" selected>コンパクト（読みやすさ優先）</option>
+          <option value="pro">プロ（メトリクス充実）</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="recent">④初心者向け：最近扱ったテーマ（重複回避・任意／カンマ区切り）</label>
+        <input id="recent" type="text" placeholder="例：種フレーズ管理, DEXのスリッページ, TVLの読み方" />
+      </div>
+    </section>
+
+    <!-- ボタン群 -->
+    <section class="grid">
+      <div class="card">
+        <h2>① 今日の市場動向（BTC/ETH＋主要アセット横断）<span class="pill">やさしい×テクニカル × バイリンガル（ラベル無し）</span></h2>
+        <button class="btn" onclick="copyPrompt('p1')">📋 プロンプトをコピー</button>
+        <div class="hint">主要：BTC/ETH/SOL/BNB/XRP/ADA/DOGE/TON/AVAX/TRX/MATIC/DOTから“当日動意の強い”銘柄を優先。用語は必ず一言補足。日本語→Englishの順で出力（ラベル無し）。</div>
+      </div>
+
+      <div class="card">
+        <h2>② 大手ニュース（SEC・ETF・取引所・企業）<span class="pill">一次×二次で相互検証 × バイリンガル（ラベル無し）</span></h2>
+        <button class="btn" onclick="copyPrompt('p2')">📋 プロンプトをコピー</button>
+        <div class="hint">公式＋大手報道でクロスチェック。断定を避け、丁寧に。日本語→Englishの順で出力（ラベル無し）。</div>
+      </div>
+
+      <div class="card">
+        <h2>③ データ系（オンチェーン / TVL / 出来高）<span class="pill">数値・時刻・出典明示 × バイリンガル（ラベル無し）</span></h2>
+        <button class="btn" onclick="copyPrompt('p3')">📋 プロンプトをコピー</button>
+        <div class="hint">Funding/OI/清算/ドミナンス/TVL等をやさしく説明しながら提示。日本語→Englishの順で出力（ラベル無し）。</div>
+      </div>
+
+      <div class="card">
+        <h2>④ 初心者向け解説（重複回避）<span class="pill">今日ひとつだけ学ぶ × バイリンガル（ラベル無し）</span></h2>
+        <button class="btn" onclick="copyPrompt('p4')">📋 プロンプトをコピー</button>
+        <div class="hint">重複を避けたテーマを丁寧に。日本語→Englishの順で出力（ラベル無し）。</div>
+      </div>
+
+      <div class="card">
+        <h2>⑤ 明日の注目ポイント（1日先の短期予測）<span class="pill">直近1週間＋meme反映 × バイリンガル（ラベル無し）</span></h2>
+        <button class="btn" onclick="copyPrompt('p5')">📋 プロンプトをコピー</button>
+        <div class="hint">確率で上昇/レンジ/下落。日本語→Englishの順で出力（ラベル無し）。</div>
+      </div>
+
+      <div class="card">
+        <h2>⑥ 最新memeコイン特集（信頼性チェック＋CA）<span class="pill">トレンド×運営健全性 × バイリンガル（ラベル無し）</span></h2>
+        <button class="btn" onclick="copyPrompt('p6')">📋 プロンプトをコピー</button>
+        <div class="hint">話題性＋健全性の両立。CAは公式照合。日本語→Englishの順で出力（ラベル無し）。</div>
+      </div>
+    </section>
+
+    <!-- 生成文貼り付け→整形→ワンタップコピー -->
+    <section class="output">
+      <h2 style="font-size:16px;margin:0 0 6px">生成文の貼り付け欄（ここにAIの出力をペースト）</h2>
+      <textarea id="post" placeholder="ChatGPT/Copilotで生成したX用の文章をここに貼り付けてください。『整える』→『Xに貼る用にコピー』で、区切り線やコード枠、行頭ラベルを自動除去します。"></textarea>
+      <div class="row">
+        <button class="btn secondary" onclick="cleanAndPreview()">整える（区切り線/コード枠/行頭ラベルの除去・空行整理）</button>
+        <button class="btn" onclick="copyPost()">Xに貼る用にコピー</button>
+      </div>
+      <p class="small">ヒント：AIには「日本語→Englishの順・ラベル無し」を指示していますが、もし「日本語:」「English:」が紛れた場合も「整える」で自動削除します。</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p>X投稿はPremium長文／やさしい口調／本文リンクなし／末尾に日本語ハッシュタグ2つ。まずは上のボタンでプロンプトをコピー→AIに貼る→出力をこの欄へ。</p>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast">✅ コピーしました</div>
+
+<script>
+let prompts = {};
+(function init(){
+  // デフォルト日付＝JST今日
+  const d = new Date();
+  const jst = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const yyyy = jst.getFullYear();
+  const mm = String(jst.getMonth()+1).padStart(2,'0');
+  const dd = String(jst.getDate()).padStart(2,'0');
+  document.getElementById('date').value = `${yyyy}-${mm}-${dd}`;
+
+  buildPrompts();
+  document.getElementById('date').addEventListener('change', buildPrompts);
+  document.getElementById('window').addEventListener('change', buildPrompts);
+  document.getElementById('depth').addEventListener('change', buildPrompts);
+  document.getElementById('recent').addEventListener('input', buildPrompts);
+})();
+
+function policyBlock(mode, dateStr){
+  const base = `【対象日】${dateStr}（JST）`;
+  if(mode==='strict'){
+    return `${base}
+【時間ウィンドウ：厳格】
+- 00:00–23:59 JST の当日付のみ採用。
+- 不足しても確認は求めず続行（対象外は破棄）。
+- 鮮度バッジ：🟢本日（JST）`;
+  }else if(mode==='pragmatic'){
+    return `${base}
+【時間ウィンドウ：実務（推奨）】
+- まず当日（JST）。不足時は直近12時間まで自動拡張。
+- 鮮度バッジ：🟢本日（JST）/ 🟡準当日（-12h以内）
+- 確認は求めず続行。`;
+  }else{
+    return `${base}
+【時間ウィンドウ：柔軟】
+- 必要に応じて直近24時間まで拡張。
+- 鮮度バッジ：🟢本日 / 🟡準当日（-12h）/ 🟠前日（-24h以内）
+- 箮度優先で続行。`;
+  }
+}
+
+function commonSearchBlock(){
+  return `
+【検索と検証（共通）】
+- ブラウジング必須。一次情報（規制当局・企業IR・公式ブログ・裁判文書）を最優先、次に大手報道（Bloomberg/Reuters/WSJ/The Block/CoinDesk/Cointelegraph/Decrypt）。
+- 各トピックは最低2ソースで相互検証。SNS単独は不可（公式URLがある場合のみ可）。
+- 各項目末尾に【出典：サイト名・URL・配信日時（UTC/JST）・鮮度バッジ】を明記。
+- 価格/出来高は取得時刻をUTC/JST併記。断定/煽り/未確認の噂は禁止。`;
+}
+
+function xPremiumBlockBilingualNoLabels(){
+  return `
+【X用ポスト（Premium長文・やさしい×テクニカル・コピーしやすさ重視・バイリンガル）】
+- 出力は純テキストのみ。水平線（---, ***, ——等）/コードブロック/装飾記号は使わない。
+- 本文にリンクは入れない（URLは最後に「リプ用リンク一覧」で別掲）。
+- 文体は落ち着いてやさしく。専門用語は“短い一言”で補足（例：Funding率＝先物の金利の向き）。
+- 数字は必要最小限にまとめ、要点→意味→一言メモの順で読みやすく。
+- バイリンガルで出力：日本語版 → 空行1行 → 英語版（同内容の自然な英訳）。行頭に「日本語」や「English」等のラベルは付けない。
+- ハッシュタグは日本語のものをちょうど2個、文末に1回だけ付ける（英語版には重複して付けない）。
+- 見出し名や注釈は返さず、「Xにそのまま貼れる完成文」だけ返す。`;
+}
+
+function depthBlock(depth){
+  if(depth==='pro'){
+    return `
+【テクニカル要件（プロ）】
+- 指標：BTC.D/ETH.D（ドミナンス＝資金の偏り）、TOTAL/TOTAL3（時価総額の全体・アルトコア）、騰落広度（上昇銘柄の広さ）、Funding率・OI・Basis（先物の過熱度）、清算（長短/金額）、スポットvsパーペ出来高、ステーブル純増減・取引所準備金（BTC/ETH）、ETFフロー、ETHガス/L2手数料、TVL（ETH/SOL/BSC/Arbitrum/Base/Tron等）、セクター（L1/L2/DeFi/NFT/Game/Meme）の相対強弱。
+- 主要アセット候補：BTC/ETH/SOL/BNB/XRP/ADA/DOGE/TON/AVAX/TRX/MATIC/DOT。全列挙は避け、当日の“動意が強い上位5銘柄”を理由付きで簡潔に。`;
+  }
+  return `
+【テクニカル要件（コンパクト）】
+- 核心：価格レンジ/出来高、ドミナンス、資金フロー（ETF/取引所/ステーブルのどれか）、先物過熱（Fundingや清算）、TVLの大変化チェーンを1〜2件。
+- 主要3銘柄（BTC/ETH＋当日強い1銘柄）で簡潔に理由を添える。`;
+}
+
+function memeBlock(){
+  return `
+【memeコイン：抽出と健全性】
+- 話題性：DexTools（Trending/Pairs/ホット）、CoinGecko（トレンド/新規上場）、主要CEXの上場告知を横断。
+- 健全性（3つ以上満たすもののみ掲載）：
+  1) コントラクト検証（Etherscan/BscScan/Solana Explorer等）と所有権（Renounced or マルチシグ）
+  2) 流動性ロック（ロック割合・期間・金額）
+  3) 保有分布（上位10の集中度が過剰でない）
+  4) 税率やブラックリスト/ミント権限がない、または明確に開示
+  5) 監査や企業実体/公式サイト・Xが整備されている
+- Honeypot/is等で売買可否・税率を確認。曖昧/危険は除外または注意喚起。`;
+}
+
+function buildPrompts(){
+  const dateStr = document.getElementById('date').value;
+  const mode = document.getElementById('window').value;
+  const depth = document.getElementById('depth').value;
+  const recent = document.getElementById('recent').value || '(指定なし)';
+
+  const timeWin = policyBlock(mode, dateStr);
+  const common = commonSearchBlock();
+  const xb = xPremiumBlockBilingualNoLabels();
+  const depthReq = depthBlock(depth);
+  const memeReq = memeBlock();
+
+  // ① 市場動向（やさしい×テクニカル）
+  const p1 = `
+あなたは最新の仮想通貨市場アナリストです。内容はやさしく丁寧に、しかし指標は要点を押さえて具体的に。
+${timeWin}
+${common}
+${depthReq}
+
+【優先ソース（市場・データ）】
+- 価格/出来高：CoinMarketCap, CoinGecko, TradingView
+- ニュース：Bloomberg, Reuters, WSJ, The Block, CoinDesk, Cointelegraph, Decrypt
+- データ：Glassnode, IntoTheBlock, Santiment, DefiLlama（TVL）, 主要取引所公式
+- ETFフロー：運用会社の開示やBloomberg/Reuters
+
+【出力（X Premium長文／やさしい口調／本文リンクなし／バイリンガル・ラベル無し）】
+- 冒頭のひとこと（落ち着いた注意喚起）
+- 今日の概況（BTC/ETHのレンジ・出来高・主因をやさしく）
+- 主要アセットの動き（当日動意が強い上位3〜5銘柄を“理由1行”で）
+- テクニカルの核心（ドミナンス/資金フロー/先物過熱/TVL/手数料 等の要点を短い補足つきで）
+- 投資家心理（やさしい表現）
+- まとめ（短文）
+- 文末に日本語ハッシュタグ2つのみ
+${xb}`;
+
+  // ② 大手ニュース
+  const p2 = `
+あなたは当日の重要ニュース編集者です。断定を避け、やさしく事実関係と影響だけを整理します。
+${timeWin}
+${common}
+
+【対象】SEC・ETF・規制・訴訟・取引所・ハッキング・上場/提携など企業発表。
+
+【出力（X Premium長文／やさしい口調／本文リンクなし／バイリンガル・ラベル無し）】
+- 重要ニュース3〜5件（見出し→要旨→市場影響（短期/中期））
+- 今日のプラス要因 / マイナス要因（簡潔に）
+- ひとこと所感（落ち着いたまとめ）
+- 文末に日本語ハッシュタグ2つのみ
+${xb}`;
+
+  // ③ データ系
+  const p3 = `
+あなたはオンチェーン/TVL/出来高の当日レポートを作るアナリストです。やさしい補足を必ず添えます。
+${timeWin}
+${common}
+
+【データ優先ソース】
+- TVL：DefiLlama
+- オンチェーン：Glassnode / IntoTheBlock / Santiment
+- 価格・出来高：CoinMarketCap / CoinGecko / 主要取引所
+- Dune（該当ダッシュボード）
+
+【出力（X Premium長文／やさしい口調／本文リンクなし／バイリンガル・ラベル無し）】
+- 全体概況（数値→意味→一言メモ）
+- 重要指標3〜5（アクティブアドレス/取引所準備金/手数料/ステーブル供給/先物建玉・清算 など）
+- チェーン別TVL（上位チェーンの変動と一言理由）
+- トレンド所感（誇張禁止）
+- 文末に日本語ハッシュタグ2つのみ
+${xb}`;
+
+  // ④ 初心者向け
+  const p4 = `
+あなたは初心者に“今日ひとつだけ”役立つ知識を、やさしく丁寧に伝える講師です。重複は避けます。
+【最近扱ったテーマ（重複禁止）】${recent}
+
+【出力（X Premium長文／やさしい口調／本文リンクなし／バイリンガル・ラベル無し）】
+- 今日のテーマ（やわらかい一言から）
+- 超シンプルな説明（やさしい比喩を1つ）
+- なぜ大事？（失敗回避につながる理由）
+- 小さなチェックポイントを3つ
+- よくある誤解を1つ、やさしく正す
+- 30秒まとめ
+- 文末に日本語ハッシュタグ2つのみ
+${xb}
+- 参考リンクは「リプ用リンク一覧」で別掲（本文には入れない）。`;
+
+  // ⑤ 明日の注目ポイント
+  const p5 = `
+あなたは“明日の注目ポイント”を提示する短期アナリストです。直近1週間の実データ＋meme動向をやさしく反映します。
+${timeWin}
+${common}
+
+【情報範囲】
+- 直近7日：ニュース、価格、出来高、資金フロー、ファンディング率、清算データ
+- meme：DexToolsトレンド、CoinGeckoトレンド/新規上場、LunarCrush（ソーシャル）
+
+【出力（X Premium長文／やさしい口調／本文リンクなし／バイリンガル・ラベル無し）】
+- 明日の注目材料Top3（理由とイベント時刻）
+- 直近1週間の要約（価格/ボラ/出来高/センチメント）
+- 上昇要因 vs 下落要因（対比）
+- シナリオ確率（上昇/レンジ/下落＝合計100%）と根拠
+- 注意点（イベント・リスク）
+- 文末に日本語ハッシュタグ2つのみ
+${xb}
+- 各所に【出典：URL・取得時刻(UTC/JST)・鮮度バッジ】を付与（本文はリンクなし、リプ用リンクで別掲）。`;
+
+  // ⑥ 最新memeコイン特集
+  const p6 = `
+あなたは「最新のmemeコイン」をやさしく、しかし慎重に特集します。話題性と運営の健全性が確認できる案件のみ掲載します。
+${timeWin}
+${common}
+${memeReq}
+
+【対象チェーン例】
+- EVM：Ethereum/Arbitrum/Base/BSC/Polygon/Optimism など
+- 非EVM：Solana、TON など
+
+【出力（X Premium長文／やさしい口調／本文リンクなし／バイリンガル・ラベル無し）】
+- 導入（落ち着いた注意喚起。投資助言ではない旨もやさしく明記）
+- 注目memeコイン（最大3件。各コイン＝1段落）
+  ・名称（ティッカー）／チェーン
+  ・契約アドレス（CA）を1つだけ明記（公式確認済み）
+  ・選定理由（トレンド/出来高/コミュニティ/上場/イベント など）
+  ・健全性の要点（流動性ロック・所有権・税率・危険機能・保有分布）
+  ・注意点（価格変動・ロック解除時期など）
+- まとめ（過度に煽らず、落ち着いた一言）
+- 文末に日本語ハッシュタグ2つのみ（例：#仮想通貨 #ミームコイン）
+${xb}
+- CAは公式サイト/公式X固定ポスト/主要エクスプローラのVerified等で突合し、曖昧なら掲載しない。`;
+
+  prompts = { p1: p1.trim(), p2: p2.trim(), p3: p3.trim(), p4: p4.trim(), p5: p5.trim(), p6: p6.trim() };
+}
+
+function copyPrompt(key){
+  const text = prompts[key];
+  navigator.clipboard.writeText(text).then(()=>{
+    toast('✅ プロンプトをコピーしました');
+  }).catch(()=>{
+    toast('⚠️ コピーに失敗。ブラウザ設定をご確認ください');
+  });
+}
+
+function cleanAndPreview(){
+  const el = document.getElementById('post');
+  let t = el.value || '';
+  // コードブロック・水平線・装飾線の除去
+  t = t.replace(/```[\s\S]*?```/g, ''); // コードブロック
+  t = t.replace(/^\s*(-{3,}|_{3,}|={3,}|—{2,}|–{3,}|\*{3,})\s*$/gm, ''); // 水平線
+  // 行頭ラベル「日本語:」「English:」「Japanese:」「英語:」などを除去
+  t = t.replace(/^(?:日本語|English|Japanese|英語)\s*[:：]\s*/gmi, '');
+  // 行頭の過度な装飾記号を軽く整形
+  t = t.replace(/^\s*[▶︎►▪︎•●◆◇□■\-]{1,2}\s?/gm, '- ');
+  // 連続空行を最大2つに
+  t = t.replace(/\n{3,}/g, '\n\n');
+  // 前後の空白を整える
+  t = t.trim() + '\n';
+  el.value = t;
+  toast('🧹 整えました');
+}
+
+function copyPost(){
+  const text = document.getElementById('post').value || '';
+  if(!text.trim()){
+    toast('⚠️ 先に生成文を貼り付けてください');
+    return;
+  }
+  navigator.clipboard.writeText(text).then(()=>{
+    toast('✅ Xに貼る用の文章をコピーしました');
+  }).catch(()=>{
+    toast('⚠️ コピーに失敗。ブラウザ設定をご確認ください');
+  });
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 1300);
+}
+</script>
+</body>
+</html>
