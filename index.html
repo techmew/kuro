@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>価格帯×反発パターン分析（スマホ最適化・完成版 / UTC初期設定）</title>
+<title>価格帯×反発パターン分析（スマホ最適化・保存対応・Excel対応）</title>
 
 <style>
   :root{
@@ -21,8 +21,6 @@
     --best:#10b981;
 
     --r:14px;
-    --shadow:0 14px 40px rgba(0,0,0,.10);
-
     --tap:44px;
 
     --sat: env(safe-area-inset-top, 0px);
@@ -58,11 +56,11 @@
 
   h1{margin:0 0 8px;font-size:18px;line-height:1.25}
   h2{margin:0 0 10px;font-size:16px;line-height:1.25}
-  .small{font-size:12px;color:var(--muted);line-height:1.55}
+  .small{font-size:12px;color:var(--muted);line-height:1.6}
 
   input,textarea,select,button{
     font-family:inherit;
-    font-size:16px; /* iOS zoom prevention */
+    font-size:16px;
     outline:none;
   }
   input,textarea,select{
@@ -94,6 +92,11 @@
     border-color:rgba(0,0,0,.05);
   }
   .btnGhost{background:#f8fafc}
+  .btnDanger{
+    background:#fff5f5;
+    color:#b91c1c;
+    border-color:#fecaca;
+  }
 
   .row{
     display:flex;
@@ -115,7 +118,6 @@
     font-weight:900;
   }
 
-  /* file input */
   #file{display:none}
   .fileRow{
     display:flex;
@@ -139,14 +141,30 @@
     padding:10px 12px;
     background:#fff;
   }
+  details[open]{box-shadow:0 0 0 1px rgba(37,99,235,.05)}
   summary{
     font-weight:1000;
     cursor:pointer;
     list-style:none;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
   }
   summary::-webkit-details-marker{display:none}
+  .summaryLabel{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .summaryCaret{
+    color:var(--muted);
+    transition:transform .18s ease;
+    font-size:14px;
+    line-height:1;
+  }
+  details[open] .summaryCaret{transform:rotate(180deg)}
 
-  /* chart */
   .chartCard{padding:0; overflow:hidden}
   .stickyHead{
     position:sticky;
@@ -215,7 +233,6 @@
     text-overflow:ellipsis;
   }
 
-  /* events */
   .sumgrid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
   @media(min-width:820px){.sumgrid{grid-template-columns:1fr 1fr 1fr}}
   .mutedBox{
@@ -231,7 +248,7 @@
     border:1px solid var(--bd);
     background:#fff;
     font-size:14px;
-    line-height:1.55;
+    line-height:1.6;
   }
   .tag{
     display:inline-flex;
@@ -247,7 +264,6 @@
   .tL3{background:#dcfce7;color:#14532d;border:1px solid #86efac}
   .tL4{background:#e0f2fe;color:#075985;border:1px solid #bae6fd}
 
-  /* simulator */
   .buyRow{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -266,7 +282,6 @@
     color:var(--text);
   }
 
-  /* settings layout */
   .grid2{display:grid;grid-template-columns:1fr;gap:10px}
   .grid3{display:grid;grid-template-columns:1fr;gap:10px}
   @media(min-width:860px){
@@ -284,7 +299,6 @@
   .toggle input{width:auto; transform:scale(1.1)}
   .toggle .mini{width:110px}
 
-  /* bottom sheets */
   .overlay{
     position:fixed;
     inset:0;
@@ -353,6 +367,188 @@
   .liTitle{font-weight:1000;font-size:13px;margin:0 0 4px}
   .liRange{font-weight:1000;font-size:12px;color:#374151}
   .liDesc{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
+
+  .weekdayBar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:10px;
+  }
+  .weekdayBtn{
+    min-height:40px;
+    padding:8px 12px;
+    border-radius:999px;
+    background:#fff;
+    border:1px solid var(--bd);
+    color:#374151;
+    font-size:13px;
+  }
+  .weekdayBtn.isActive{
+    background:var(--blue);
+    color:#fff;
+    border-color:var(--blue);
+  }
+
+  .timeList{
+    margin:8px 0 0;
+    padding-left:18px;
+  }
+  .timeList li{
+    margin:4px 0;
+    color:#374151;
+    font-size:12px;
+  }
+  .timingRow{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    margin-top:10px;
+  }
+  @media(min-width:820px){
+    .timingRow{grid-template-columns:1fr 1fr}
+  }
+
+  .eventMeta{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+    margin-top:8px;
+  }
+  @media(min-width:820px){
+    .eventMeta{grid-template-columns:1fr 1fr}
+  }
+
+  .emptyState{
+    padding:12px;
+    border-radius:12px;
+    border:1px dashed #d1d5db;
+    color:var(--muted);
+    background:#fbfdff;
+    font-size:13px;
+    line-height:1.6;
+  }
+
+  .eventVizCard{
+    margin-top:12px;
+    padding:12px;
+    border-radius:14px;
+    border:1px solid var(--bd);
+    background:#fbfdff;
+  }
+  .eventLegend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:8px;
+  }
+  .eventLegendItem{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    color:#374151;
+    background:#fff;
+    border:1px solid var(--bd);
+    border-radius:999px;
+    padding:6px 10px;
+  }
+  .legendSwatch{
+    width:10px;
+    height:10px;
+    border-radius:999px;
+    display:inline-block;
+  }
+  .sw-start{background:#2563eb}
+  .sw-low{background:#ef4444}
+  .sw-rise{background:#16a34a}
+  .sw-high{background:#f59e0b}
+
+  #eventChartWrap{
+    position:relative;
+    margin-top:10px;
+    background:#fff;
+    border:1px solid var(--bd);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  #eventChart{
+    width:100%;
+    height:320px;
+    display:block;
+    touch-action:none;
+  }
+  @media(min-width:720px){
+    #eventChart{height:360px}
+  }
+  #eventChartPopup{
+    position:absolute;
+    background:rgba(17,17,17,.96);
+    color:#fff;
+    padding:10px 12px;
+    border-radius:12px;
+    font-size:12px;
+    display:none;
+    pointer-events:none;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+    z-index:20;
+    max-width:min(90vw, 360px);
+    line-height:1.5;
+  }
+  #eventDetailPanel{
+    margin-top:10px;
+    background:#fff;
+  }
+  .miniFlow{
+    margin-top:8px;
+    padding:10px 12px;
+    border-radius:12px;
+    border:1px solid var(--bd);
+    background:#fff;
+    font-size:13px;
+    line-height:1.6;
+  }
+  .timelineSteps{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+    margin-top:10px;
+  }
+  .timelineStep{
+    display:grid;
+    grid-template-columns:26px 1fr;
+    gap:10px;
+    align-items:flex-start;
+    border:1px solid var(--bd);
+    border-radius:12px;
+    background:#fff;
+    padding:10px 12px;
+  }
+  .timelineStep.isFocus{
+    border-color:rgba(37,99,235,.30);
+    background:#eff6ff;
+  }
+  .stepDot{
+    width:14px;
+    height:14px;
+    border-radius:999px;
+    margin-top:3px;
+  }
+  .stepDot.start{background:#2563eb}
+  .stepDot.low{background:#ef4444}
+  .stepDot.rise{background:#16a34a}
+  .stepDot.high{background:#f59e0b}
+  .stepTitle{
+    font-size:13px;
+    font-weight:1000;
+    color:#111827;
+    margin-bottom:2px;
+  }
+  .stepMeta{
+    font-size:12px;
+    color:#374151;
+    line-height:1.6;
+  }
+
 </style>
 </head>
 
@@ -362,7 +558,9 @@
   <div class="card">
     <h1>価格帯 × 反発パターン分析（スマホ最適化）</h1>
     <div class="small">
-      ✅ 初期設定を <b>UTC</b> にしました（曜日×時間の集計や表示がUTC基準になります）。
+      ✅ 初期設定は <b>UTC</b> のままです。<br>
+      ✅ 入力した設定・シミュレーター・読み込んだデータは、ブラウザを閉じても自動で残ります。<br>
+      ✅ Excel（.xlsx / .xls）は先頭シートを読み込みます。
     </div>
   </div>
 
@@ -372,101 +570,116 @@
       <label for="file" class="btnPrimary" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:var(--tap);padding:10px 12px;border-radius:12px;cursor:pointer;">
         📁 ファイルを選ぶ
       </label>
-      <input type="file" id="file" accept=".csv,.txt">
+      <button id="btnClearData" class="btnDanger" type="button">🗑️ 読み込みデータをクリア</button>
+      <input type="file" id="file" accept=".csv,.txt,.xlsx,.xls">
       <div class="fileName" id="fileName">未選択</div>
     </div>
     <div class="small" style="margin-top:8px">
       形式：<b>timestamp;price;volume</b> または <b>timestamp,price,volume</b>（ヘッダー有り/無しOK）<br>
+      ※ <b>CoinMarketCap系のCSV</b> のような <b>BOM付き / ダブルクォート付き</b> データにも対応しています。<br>
+      Excelは先頭シートの1〜3列目を読み込みます。<br>
       ※ 読み込んだデータ本文は画面に表示しません（内部で解析のみ行います）。
     </div>
 
     <details style="margin-top:10px">
-      <summary>（任意）手入力で貼り付ける</summary>
+      <summary>
+        <span class="summaryLabel">（任意）手入力で貼り付ける</span>
+        <span class="summaryCaret">▼</span>
+      </summary>
       <div class="small" style="margin-top:6px">ここに貼り付けると即反映されます（通常は不要）。</div>
       <textarea id="input" rows="6" placeholder="timestamp;price;volume&#10;2026-03-01 10:00:00;1.2345;123456"></textarea>
     </details>
   </div>
 
   <div class="card">
-    <h2>設定（調査用）</h2>
+    <details id="settingsDetails">
+      <summary>
+        <span class="summaryLabel">⚙️ 設定（調査用）</span>
+        <span class="summaryCaret">▼</span>
+      </summary>
 
-    <div class="grid3">
-      <div>
-        <div class="inlineLabel">タイムゾーン（曜日×時間に影響）</div>
-        <select id="tzMode">
-          <option value="utc" selected>UTC（初期）</option>
-          <option value="jst">JST（日本時間）</option>
-          <option value="local">ローカル（端末の設定）</option>
-        </select>
-      </div>
+      <div class="small" style="margin-top:8px">この項目はタップで開閉できます。</div>
 
-      <div>
-        <div class="inlineLabel">ローリング分位（価格帯を直近で再計算）</div>
-        <div class="toggleLine">
-          <label class="toggle"><input type="checkbox" id="rollOn">使う</label>
-          <label class="toggle">窓（時間）<input id="rollWin" class="mini" type="number" min="24" step="24" value="720"></label>
-        </div>
-        <div class="small" style="margin-top:6px">例：720時間＝約30日。相場が変化しても「最近の割高/割安」が見やすくなります。</div>
-      </div>
+      <div style="height:10px"></div>
 
-      <div>
-        <div class="inlineLabel">出来高の急増判定（⚡）</div>
-        <div class="toggleLine">
-          <label class="toggle">窓（時間）<input id="volWin" class="mini" type="number" min="24" step="24" value="72"></label>
-          <label class="toggle">上位（%）<input id="volTop" class="mini" type="number" min="1" max="50" step="1" value="10"></label>
-        </div>
-      </div>
-    </div>
-
-    <div style="height:10px"></div>
-
-    <div class="grid2">
-      <div class="mutedBox">
-        <div style="font-weight:1000;margin-bottom:8px">急落→反発 検出</div>
-        <div class="grid3">
-          <div>
-            <div class="inlineLabel">下落判定（%）</div>
-            <input id="dropPct" type="number" step="0.5" value="12">
-          </div>
-          <div>
-            <div class="inlineLabel">下落を見る（時間）</div>
-            <input id="lookDrop" type="number" min="1" step="1" value="6">
-          </div>
-          <div>
-            <div class="inlineLabel">反発を見る（時間）</div>
-            <input id="lookTotal" type="number" min="2" step="1" value="24">
-          </div>
+      <div class="grid3">
+        <div>
+          <div class="inlineLabel">タイムゾーン（曜日×時間に影響）</div>
+          <select id="tzMode">
+            <option value="utc" selected>UTC（初期）</option>
+            <option value="jst">JST（日本時間）</option>
+            <option value="local">ローカル（端末の設定）</option>
+          </select>
         </div>
 
-        <div style="height:8px"></div>
+        <div>
+          <div class="inlineLabel">ローリング分位（価格帯を直近で再計算）</div>
+          <div class="toggleLine">
+            <label class="toggle"><input type="checkbox" id="rollOn">使う</label>
+            <label class="toggle">窓（時間）<input id="rollWin" class="mini" type="number" min="24" step="24" value="720"></label>
+          </div>
+          <div class="small" style="margin-top:6px">例：720時間＝約30日。最近の割高/割安が見やすくなります。</div>
+        </div>
 
-        <div class="grid3">
-          <div>
-            <div class="inlineLabel">連続検出の間引き（時間）</div>
-            <input id="minGap" type="number" min="0" step="1" value="6">
-          </div>
-          <div>
-            <div class="inlineLabel">事例表示（最大）</div>
-            <input id="maxEvents" type="number" min="10" step="5" value="30">
-          </div>
-          <div>
-            <div class="inlineLabel">集計表示（上位枠）</div>
-            <input id="maxSummary" type="number" min="6" step="3" value="12">
+        <div>
+          <div class="inlineLabel">出来高の急増判定（⚡）</div>
+          <div class="toggleLine">
+            <label class="toggle">窓（時間）<input id="volWin" class="mini" type="number" min="24" step="24" value="72"></label>
+            <label class="toggle">上位（%）<input id="volTop" class="mini" type="number" min="1" max="50" step="1" value="10"></label>
           </div>
         </div>
-        <div class="small" style="margin-top:6px">コツ：数値を変えても傾向が崩れないか（再現性）を見ると調査精度が上がります。</div>
       </div>
 
-      <div class="mutedBox">
-        <div style="font-weight:1000;margin-bottom:8px">表示</div>
-        <div class="toggleLine">
-          <label class="toggle"><input type="checkbox" id="showBands" checked>背景バンド</label>
-          <label class="toggle"><input type="checkbox" id="showGrid" checked>グリッド</label>
-          <label class="toggle"><input type="checkbox" id="showVolInPopup" checked>出来高を表示</label>
+      <div style="height:10px"></div>
+
+      <div class="grid2">
+        <div class="mutedBox">
+          <div style="font-weight:1000;margin-bottom:8px">急落→反発 検出</div>
+          <div class="grid3">
+            <div>
+              <div class="inlineLabel">下落判定（%）</div>
+              <input id="dropPct" type="number" step="0.5" value="12">
+            </div>
+            <div>
+              <div class="inlineLabel">下落を見る（時間）</div>
+              <input id="lookDrop" type="number" min="1" step="1" value="6">
+            </div>
+            <div>
+              <div class="inlineLabel">反発を見る（時間）</div>
+              <input id="lookTotal" type="number" min="2" step="1" value="24">
+            </div>
+          </div>
+
+          <div style="height:8px"></div>
+
+          <div class="grid3">
+            <div>
+              <div class="inlineLabel">連続検出の間引き（時間）</div>
+              <input id="minGap" type="number" min="0" step="1" value="6">
+            </div>
+            <div>
+              <div class="inlineLabel">事例表示（最大）</div>
+              <input id="maxEvents" type="number" min="10" step="5" value="30">
+            </div>
+            <div>
+              <div class="inlineLabel">集計表示（上位枠）</div>
+              <input id="maxSummary" type="number" min="6" step="3" value="12">
+            </div>
+          </div>
+          <div class="small" style="margin-top:6px">数値を変えても傾向が残るかを見ると、調査の再現性を確認しやすいです。</div>
         </div>
-        <div class="small" style="margin-top:6px">ポップアップは年を省略します。日付＋曜日＋時間を表示します（多い場合は自動で間引き）。</div>
+
+        <div class="mutedBox">
+          <div style="font-weight:1000;margin-bottom:8px">表示</div>
+          <div class="toggleLine">
+            <label class="toggle"><input type="checkbox" id="showBands" checked>背景バンド</label>
+            <label class="toggle"><input type="checkbox" id="showGrid" checked>グリッド</label>
+            <label class="toggle"><input type="checkbox" id="showVolInPopup" checked>出来高を表示</label>
+          </div>
+          <div class="small" style="margin-top:6px">ポップアップと④では、日付 +（曜日）+ 時間 を表示します。</div>
+        </div>
       </div>
-    </div>
+    </details>
   </div>
 
   <div class="card chartCard">
@@ -512,15 +725,51 @@
   <div class="card">
     <h2>④ 大きく下落 → その後反発した事例（精査）</h2>
     <div class="row">
-      <span class="pill">下落判定：<b id="dropRule">--</b></span>
-      <span class="pill">検出：<b id="evtCount">0</b> 件</span>
+      <span class="pill">見つけ方：<b id="dropRule">--</b></span>
+      <span class="pill" style="display:none">検出：<b id="evtCount">0</b> 件</span>
+      <span class="pill">表示中：<b id="selectedDowLabel">全曜日</b></span>
     </div>
 
-    <details id="summaryBox" open>
-      <summary>曜日×時間の傾向（急落が起きた時間帯）</summary>
-      <div class="small" style="margin-top:6px">「急落の開始時刻」を曜日×時間で集計します（UTC基準）。</div>
+    
+<details id="summaryBox" open>
+      <summary>
+        <span class="summaryLabel">曜日で絞り込む</span>
+        <span class="summaryCaret">▼</span>
+      </summary>
+
+      <div class="weekdayBar" id="weekdayButtons" style="margin-top:10px">
+        <button type="button" class="weekdayBtn isActive" data-dow="all">全曜日</button>
+        <button type="button" class="weekdayBtn" data-dow="0">日</button>
+        <button type="button" class="weekdayBtn" data-dow="1">月</button>
+        <button type="button" class="weekdayBtn" data-dow="2">火</button>
+        <button type="button" class="weekdayBtn" data-dow="3">水</button>
+        <button type="button" class="weekdayBtn" data-dow="4">木</button>
+        <button type="button" class="weekdayBtn" data-dow="5">金</button>
+        <button type="button" class="weekdayBtn" data-dow="6">土</button>
+      </div>
+
+      <div class="small" id="weekdaySummaryText" style="margin-top:8px">全曜日を表示中です。</div>
+
       <div class="sumgrid" id="summary"></div>
+
+      <div class="eventVizCard">
+        <div style="font-weight:1000">時系列グラフ</div>
+        <div class="eventLegend">
+          <span class="eventLegendItem"><span class="legendSwatch sw-start"></span>下がり始め</span>
+          <span class="eventLegendItem"><span class="legendSwatch sw-low"></span>底値</span>
+          <span class="eventLegendItem"><span class="legendSwatch sw-rise"></span>上がり始め</span>
+          <span class="eventLegendItem"><span class="legendSwatch sw-high"></span>最高値</span>
+        </div>
+
+        <div id="eventChartWrap">
+          <canvas id="eventChart"></canvas>
+          <div id="eventChartPopup"></div>
+        </div>
+
+        <div id="eventDetailPanel" class="mutedBox">事例が見つかると、ここに詳細が表示されます。</div>
+      </div>
     </details>
+
 
     <div style="height:10px"></div>
     <div id="patterns"></div>
@@ -609,14 +858,7 @@
       <div style="font-weight:1000">⚡（出来高ホット）ってなに？</div>
       <div class="small" style="margin-top:6px">
         直近の指定窓（例：72時間）で、出来高が<b>上位X%</b>に入っていると ⚡ を付けます。<br>
-        「薄商いのノイズ」より「本当に売買が集中した動き」を見分けるための目安です。
-      </div>
-    </div>
-
-    <div class="mutedBox" style="margin-top:10px">
-      <div style="font-weight:1000">調査のコツ</div>
-      <div class="small" style="margin-top:6px">
-        しきい値（下落%や時間）を変えても傾向が残るか＝<b>再現性</b>があるかを見ると、判断材料が強くなります。
+        「薄商いのノイズ」より「本当に売買が集中した動き」を見分ける目安です。
       </div>
     </div>
   </div>
@@ -626,9 +868,13 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
+  const STORAGE_KEY = 'price-band-rebound-analyzer-mobile-v4';
+  const DOW = ['日','月','火','水','木','金','土'];
+
   const fileEl = $('file');
   const fileNameEl = $('fileName');
   const inputEl = $('input');
+  const btnClearDataEl = $('btnClearData');
 
   const chartEl = $('chart');
   const popupEl = $('popup');
@@ -637,10 +883,14 @@
   const patternsEl = $('patterns');
   const summaryEl = $('summary');
   const evtCountEl = $('evtCount');
+  const selectedDowLabelEl = $('selectedDowLabel');
+  const weekdaySummaryTextEl = $('weekdaySummaryText');
 
   const r0 = $('r0'), r1 = $('r1'), r2 = $('r2'), r3 = $('r3'), r4 = $('r4');
 
-  // settings
+  const settingsDetailsEl = $('settingsDetails');
+  const summaryBoxEl = $('summaryBox');
+
   const tzModeEl = $('tzMode');
   const rollOnEl = $('rollOn');
   const rollWinEl = $('rollWin');
@@ -661,7 +911,6 @@
   const rollStateEl = $('rollState');
   const dropRuleEl = $('dropRule');
 
-  // sheets
   const overlayEl = $('overlay');
   const sheetLegendEl = $('sheetLegend');
   const sheetMeaningEl = $('sheetMeaning');
@@ -670,18 +919,44 @@
   const closeLegendEl = $('closeLegend');
   const closeMeaningEl = $('closeMeaning');
 
-  const DOW = ['日','月','火','水','木','金','土'];
+  const weekdayButtonsWrapEl = $('weekdayButtons');
+  const eventChartEl = $('eventChart');
+  const eventChartPopupEl = $('eventChartPopup');
+  const eventDetailPanelEl = $('eventDetailPanel');
+
+  const sellEl = $('sell');
+  const avgEl = $('avgPrice');
+  const profitEl = $('profit');
 
   let rows = [];
   let thresholdsGlobal = null;
   let thresholdsRolling = null;
   let minP = NaN, maxP = NaN;
-
   let hoverIdx = null;
   let needsRedraw = false;
+  let saveTimer = null;
+  let selectedDow = 'all';
+  let lastEvents = [];
+  let eventGraphEvents = [];
+  let eventGraphItems = [];
+  let eventGraphHover = null;
+  let eventGraphSelected = null;
 
-  // ✅ 強制：UTCを初期値に（ブラウザのフォーム復元対策）
   tzModeEl.value = 'utc';
+
+  function safeLocalGet(){
+    try{
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    }catch(_){
+      return null;
+    }
+  }
+
+  function safeLocalSet(value){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+    }catch(_){}
+  }
 
   function requestRedraw(){
     if(needsRedraw) return;
@@ -692,6 +967,27 @@
     });
   }
 
+  function scheduleSave(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveState, 120);
+  }
+
+  function cleanCellText(v){
+    let s = String(v ?? '').replace(/^﻿/, '').trim();
+    if((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))){
+      s = s.slice(1, -1).trim();
+    }
+    return s;
+  }
+
+  function toNum(v){
+    if(typeof v === 'number') return Number.isFinite(v) ? v : NaN;
+    const s = cleanCellText(v).replace(/,/g, '');
+    if(!s) return NaN;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
   function getTimeZoneName(){
     const v = tzModeEl.value;
     if(v === 'utc') return 'UTC';
@@ -699,85 +995,192 @@
     return undefined;
   }
 
+  function getTimeZoneLabel(){
+    const v = tzModeEl.value;
+    if(v === 'utc') return 'UTC';
+    if(v === 'jst') return 'JST';
+    return 'ローカル';
+  }
+
+  function normalizeTimestampText(raw){
+    return cleanCellText(raw)
+      .replace(/　/g, ' ')
+      .replace(/[\/.]/g, '-')
+      .replace(/\s+/g, ' ');
+  }
+
   function parseTimestamp(tsRaw){
-    const ts = String(tsRaw || '').trim();
+    if(tsRaw instanceof Date){
+      return Number.isFinite(tsRaw.getTime()) ? tsRaw : null;
+    }
+
+    let ts = normalizeTimestampText(tsRaw);
     if(!ts) return null;
+
+    if(/^\d{10,13}$/.test(ts)){
+      const n = Number(ts);
+      const ms = ts.length === 13 ? n : n * 1000;
+      const d = new Date(ms);
+      return Number.isFinite(d.getTime()) ? d : null;
+    }
 
     if(/[zZ]$/.test(ts) || /[+\-]\d{2}:\d{2}$/.test(ts) || /[+\-]\d{4}$/.test(ts)){
       const d = new Date(ts.replace(' ', 'T'));
-      return isFinite(d.getTime()) ? d : null;
+      return Number.isFinite(d.getTime()) ? d : null;
     }
 
     const mode = tzModeEl.value;
-    const base = ts.replace(' ', 'T');
+    let base = ts.replace(' ', 'T');
+    if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(base)){
+      base += 'T00:00:00';
+    }
+    if(/^\d{4}-\d{1,2}-\d{1,2}T\d{1,2}:\d{2}$/.test(base)){
+      base += ':00';
+    }
 
     if(mode === 'utc'){
       const d = new Date(base + 'Z');
-      return isFinite(d.getTime()) ? d : null;
+      return Number.isFinite(d.getTime()) ? d : null;
     }
     if(mode === 'jst'){
       const d = new Date(base + '+09:00');
-      return isFinite(d.getTime()) ? d : null;
+      return Number.isFinite(d.getTime()) ? d : null;
     }
     const d = new Date(base);
-    return isFinite(d.getTime()) ? d : null;
+    return Number.isFinite(d.getTime()) ? d : null;
+  }
+
+  function pad2(n){
+    return String(n).padStart(2, '0');
+  }
+
+  function escapeHTML(value){
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function fmtNoYear(date){
     const tz = getTimeZoneName();
-    const opt = { timeZone: tz, month:'numeric', day:'numeric', weekday:'short', hour:'2-digit', hour12:false };
+    const opt = { timeZone: tz, month:'numeric', day:'numeric', weekday:'short', hour:'2-digit', minute:'2-digit', hour12:false };
     const parts = new Intl.DateTimeFormat('ja-JP', opt).formatToParts(date);
     const map = {};
     for(const p of parts) map[p.type] = p.value;
-    return `${map.month}/${map.day}（${map.weekday}） ${map.hour}:00`;
+    return `${map.month}/${map.day}（${map.weekday}） ${map.hour}:${map.minute}`;
   }
 
   function fmtAxisDate(date){
     const tz = getTimeZoneName();
     const opt1 = { timeZone: tz, month:'numeric', day:'numeric', weekday:'short' };
-    const opt2 = { timeZone: tz, hour:'2-digit', hour12:false };
+    const opt2 = { timeZone: tz, hour:'2-digit', minute:'2-digit', hour12:false };
     const p1 = new Intl.DateTimeFormat('ja-JP', opt1).formatToParts(date);
     const p2 = new Intl.DateTimeFormat('ja-JP', opt2).formatToParts(date);
     const map1 = {}; for(const p of p1) map1[p.type]=p.value;
     const map2 = {}; for(const p of p2) map2[p.type]=p.value;
-    return [`${map1.month}/${map1.day}（${map1.weekday}）`, `${map2.hour}:00`];
+    return [`${map1.month}/${map1.day}（${map1.weekday}）`, `${map2.hour}:${map2.minute}`];
   }
 
   function getDOWHour(date){
     const tz = getTimeZoneName();
     if(!tz){
-      return { dow: date.getDay(), hour: date.getHours() };
+      return { dow: date.getDay(), hour: date.getHours(), minute: date.getMinutes() };
     }
     const w = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday:'short' }).format(date);
-    const h = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour:'2-digit', hour12:false }).format(date);
-    const hour = Number(h);
-    const map = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
-    return { dow: map[w] ?? 0, hour: isFinite(hour) ? hour : 0 };
+    const hm = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour:'2-digit', minute:'2-digit', hour12:false }).formatToParts(date);
+    const map = {};
+    for(const p of hm) map[p.type] = p.value;
+    const hour = Number(map.hour);
+    const minute = Number(map.minute);
+    const wmap = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+    return { dow: wmap[w] ?? 0, hour: Number.isFinite(hour) ? hour : 0, minute: Number.isFinite(minute) ? minute : 0 };
   }
 
   function parseText(text){
     const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if(lines.length < 2){ rows = []; return; }
+    if(lines.length < 1){ rows = []; return; }
 
-    const delim = lines[0].includes(';') ? ';' : (lines[0].includes(',') ? ',' : ';');
+    let delim = ';';
+    if(lines[0].includes(';')) delim = ';';
+    else if(lines[0].includes(',')) delim = ',';
 
+    const firstParts = lines[0].split(delim).map(s => cleanCellText(s));
     let start = 0;
-    if(/timestamp/i.test(lines[0]) && /price/i.test(lines[0])) start = 1;
+    const firstDate = parseTimestamp(firstParts[0]);
+    const firstPrice = toNum(firstParts[1]);
+    const looksLikeHeader =
+      /timestamp|date|time|日時|日付/i.test(firstParts[0] || '') ||
+      /price|価格/i.test(firstParts[1] || '') ||
+      (!firstDate && !Number.isFinite(firstPrice));
+
+    if(looksLikeHeader) start = 1;
 
     const out = [];
     for(let i=start;i<lines.length;i++){
-      const parts = lines[i].split(delim).map(s => s.trim());
+      const parts = lines[i].split(delim).map(s => cleanCellText(s));
       if(parts.length < 2) continue;
 
       const ts = parseTimestamp(parts[0]);
-      const price = Number(parts[1]);
-      const vol = parts.length >= 3 ? Number(parts[2]) : NaN;
+      const price = toNum(parts[1]);
+      const vol = parts.length >= 3 ? toNum(parts[2]) : NaN;
 
-      if(!ts || !isFinite(ts.getTime()) || !isFinite(price)) continue;
-      out.push({ t: ts, p: price, v: (isFinite(vol) ? vol : null) });
+      if(!ts || !Number.isFinite(ts.getTime()) || !Number.isFinite(price)) continue;
+      out.push({ t: ts, p: price, v: Number.isFinite(vol) ? vol : null });
     }
     out.sort((a,b)=>a.t-b.t);
     rows = out;
+  }
+
+  async function ensureXLSX(){
+    if(window.XLSX) return true;
+    const cdns = [
+      'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js',
+      'https://unpkg.com/xlsx/dist/xlsx.full.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+    ];
+
+    for(const src of cdns){
+      const ok = await new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve(true);
+        s.onerror = () => resolve(false);
+        document.head.appendChild(s);
+      });
+      if(ok && window.XLSX) return true;
+    }
+    return false;
+  }
+
+  async function fileToNormalizedText(file){
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+    if(ext === 'csv' || ext === 'txt'){
+      return await file.text();
+    }
+
+    if(ext === 'xlsx' || ext === 'xls'){
+      const ok = await ensureXLSX();
+      if(!ok) throw new Error('Excel読込ライブラリを読み込めませんでした。ネット接続がある状態で再度お試しください。');
+
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type:'array', cellDates:false });
+      const sheetName = wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const matrix = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
+
+      const text = matrix
+        .filter(row => Array.isArray(row) && row.some(cell => String(cell ?? '').trim() !== ''))
+        .map(row => row.slice(0,3).map(cell => String(cell ?? '').trim()).join(';'))
+        .join('\n');
+
+      return { text, sheetName };
+    }
+
+    throw new Error('対応していない形式です。csv / txt / xlsx / xls を選んでください。');
   }
 
   function quantileSorted(sorted, q){
@@ -791,7 +1194,7 @@
   }
 
   function computeGlobalThresholds(){
-    if(rows.length === 0){ thresholdsGlobal = null; return; }
+    if(rows.length === 0){ thresholdsGlobal = null; minP = NaN; maxP = NaN; return; }
     const sorted = rows.map(r=>r.p).slice().sort((a,b)=>a-b);
     minP = sorted[0];
     maxP = sorted[sorted.length-1];
@@ -878,7 +1281,7 @@
   }
 
   function niceTicks(min, max, count){
-    if(!(isFinite(min) && isFinite(max)) || min === max){
+    if(!(Number.isFinite(min) && Number.isFinite(max)) || min === max){
       return [min];
     }
     const span = max - min;
@@ -893,8 +1296,8 @@
   }
 
   function percentileInWindow(values, x){
-    const arr = values.filter(v => isFinite(v)).slice().sort((a,b)=>a-b);
-    if(!arr.length || !isFinite(x)) return null;
+    const arr = values.filter(v => Number.isFinite(v)).slice().sort((a,b)=>a-b);
+    if(!arr.length || !Number.isFinite(x)) return null;
     let lo=0, hi=arr.length;
     while(lo<hi){
       const mid = (lo+hi)>>1;
@@ -905,12 +1308,12 @@
 
   function volumeFlagAt(i){
     const v = rows[i]?.v;
-    if(!isFinite(v)) return {flag:false, pct:null};
+    if(!Number.isFinite(v)) return {flag:false, pct:null};
 
     const win = Math.max(24, Math.floor(Number(volWinEl.value) || 72));
     const top = Math.min(50, Math.max(1, Math.floor(Number(volTopEl.value) || 10)));
     const s = Math.max(0, i - win + 1);
-    const slice = rows.slice(s, i+1).map(r=>r.v).filter(x=>isFinite(x));
+    const slice = rows.slice(s, i+1).map(r=>r.v).filter(x=>Number.isFinite(x));
     if(!slice.length) return {flag:false, pct:null};
 
     const pct = percentileInWindow(slice, v);
@@ -930,14 +1333,14 @@
 
     ctx.clearRect(0,0,W,H);
 
-    if(rows.length < 2 || !isFinite(minP) || !isFinite(maxP) || !thresholdsGlobal){
+    if(rows.length < 2 || !Number.isFinite(minP) || !Number.isFinite(maxP) || !thresholdsGlobal){
       ctx.fillStyle = '#6b7280';
       ctx.font = '12px system-ui';
       ctx.fillText('データを読み込むとここに価格推移が表示されます', 12, 26);
       return;
     }
 
-    const padL = 10, padR = 72, padT = 12, padB = 46;
+    const padL = 10, padR = 84, padT = 12, padB = 50;
 
     const x = (i) => padL + (W - padL - padR) * (i / (rows.length - 1));
     const y = (p) => padT + (H - padT - padB) * (1 - (p - minP) / (maxP - minP || 1));
@@ -1051,18 +1454,10 @@
       ctx.stroke();
 
       const [line1, line2] = fmtAxisDate(d);
-      const baseX = Math.max(padL, Math.min(W - padR - 90, xx - 44));
-      ctx.fillText(line1, baseX, H - 22);
-      ctx.fillText(line2, baseX, H - 6);
+      const baseX = Math.max(padL, Math.min(W - padR - 92, xx - 46));
+      ctx.fillText(line1, baseX, H - 24);
+      ctx.fillText(line2, baseX, H - 8);
     }
-
-    const lastI = rows.length - 1;
-    const ld = rows[lastI].t;
-    const lxx = x(lastI);
-    const [l1,l2] = fmtAxisDate(ld);
-    const bx = Math.max(padL, Math.min(W - padR - 90, lxx - 44));
-    ctx.fillText(l1, bx, H - 22);
-    ctx.fillText(l2, bx, H - 6);
 
     ctx.restore();
 
@@ -1101,7 +1496,7 @@
     if(rows.length < 2) return;
     const r = chartEl.getBoundingClientRect();
     const W = chartEl.width;
-    const padL = 10, padR = 72;
+    const padL = 10, padR = 84;
     const plotW = (W - padL - padR);
     const px = clientX - r.left;
     const rel = (px - padL) / (plotW || 1);
@@ -1117,7 +1512,7 @@
 
     const volInfo = volumeFlagAt(i);
     const showVol = showVolInPopupEl.checked;
-    const volStr = (showVol && isFinite(row.v))
+    const volStr = (showVol && Number.isFinite(row.v))
       ? ` / 出来高 ${row.v.toFixed(2)}${volInfo.flag ? ' ⚡' : ''}`
       : '';
 
@@ -1142,9 +1537,70 @@
     requestRedraw();
   }
 
+  function hoursBetween(a, b){
+    return ((b - a) / 36e5);
+  }
+
+  function fmtHours(v){
+    if(!Number.isFinite(v)) return '--';
+    const totalMin = Math.round(v * 60);
+    if(totalMin < 60) return `約${totalMin}分`;
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if(m === 0) return `約${h}時間`;
+    return `約${h}時間${m}分`;
+  }
+
+  function detectRiseStartIndex(minIdx, endIdx){
+    if(!rows[minIdx]) return null;
+    const base = rows[minIdx].p;
+    for(let k=minIdx+1;k<=endIdx;k++){
+      if(rows[k].p > base) return k;
+    }
+    return null;
+  }
+
+  function shortZoneName(z){
+    if(z===4) return 'かなり高い';
+    if(z===3) return '高め';
+    if(z===2) return '真ん中';
+    if(z===1) return '安め';
+    return 'かなり安い';
+  }
+
+  function zoneNameAtIndex(i){
+    const row = rows[i];
+    if(!row) return '--';
+    const thr = thresholdsAt(i) || thresholdsGlobal;
+    if(!thr) return '--';
+    return shortZoneName(zoneOf(row.p, thr));
+  }
+
+  function avgVolumeBetween(startIdx, endIdx){
+    const vals = rows.slice(startIdx, endIdx + 1).map(r => r.v).filter(v => Number.isFinite(v));
+    if(!vals.length) return NaN;
+    return vals.reduce((a,b) => a + b, 0) / vals.length;
+  }
+
+  function estimateSellUsd(startIdx, endIdx, drop){
+    const avgVol = avgVolumeBetween(startIdx, endIdx);
+    if(!Number.isFinite(avgVol)) return NaN;
+    const ratio = Math.min(0.85, Math.max(0.25, Math.abs(drop) * 3));
+    return avgVol * ratio;
+  }
+
+  function fmtUsdCompact(v){
+    if(!Number.isFinite(v)) return '--';
+    const abs = Math.abs(v);
+    if(abs >= 1e9) return `$${(v/1e9).toFixed(2)}B`;
+    if(abs >= 1e6) return `$${(v/1e6).toFixed(2)}M`;
+    if(abs >= 1e3) return `$${(v/1e3).toFixed(1)}K`;
+    return `$${v.toFixed(0)}`;
+  }
+
   function buildBigDropEvents(){
     const events = [];
-    if(rows.length < 30) return events;
+    if(rows.length < 4) return events;
 
     const dropThreshold = -Math.abs(Number(dropPctEl.value) || 12) / 100;
     const lookDrop = Math.max(1, Math.floor(Number(lookDropEl.value) || 6));
@@ -1155,33 +1611,35 @@
     for(let i=0;i<rows.length-lookTotal;i++){
       const startP = prices[i];
 
-      let minP2 = Infinity;
+      let minPrice = Infinity;
       let minIdx = i;
       const dropEnd = Math.min(rows.length-1, i + lookDrop);
       for(let k=i+1;k<=dropEnd;k++){
         const p = prices[k];
-        if(p < minP2){ minP2 = p; minIdx = k; }
+        if(p < minPrice){ minPrice = p; minIdx = k; }
       }
 
-      const drop = (minP2/startP) - 1;
+      const drop = (minPrice/startP) - 1;
       if(drop > dropThreshold) continue;
 
-      let maxP2 = -Infinity;
+      let maxPrice = -Infinity;
       let maxIdx = minIdx;
       const totalEnd = Math.min(rows.length-1, i + lookTotal);
       for(let k=minIdx;k<=totalEnd;k++){
         const p = prices[k];
-        if(p > maxP2){ maxP2 = p; maxIdx = k; }
+        if(p > maxPrice){ maxPrice = p; maxIdx = k; }
       }
-      const rebound = (maxP2/minP2) - 1;
+      const rebound = (maxPrice/minPrice) - 1;
+      const riseStartIdx = detectRiseStartIndex(minIdx, totalEnd);
 
       const startT = rows[i].t;
       const lowT = rows[minIdx].t;
+      const riseStartT = riseStartIdx !== null ? rows[riseStartIdx].t : null;
       const highT = rows[maxIdx].t;
 
-      let sev = 2, sevLabel='大きめの売り';
-      if(drop <= -0.20){ sev = 4; sevLabel='急落（パニック寄り）'; }
-      else if(drop <= -0.15){ sev = 3; sevLabel='急落（投げ売り寄り）'; }
+      let sev = 2, sevLabel='やや強い売り';
+      if(drop <= -0.20){ sev = 4; sevLabel='とても強い売り'; }
+      else if(drop <= -0.15){ sev = 3; sevLabel='かなり強い売り'; }
 
       const vStart = rows[i].v;
       const vLow   = rows[minIdx].v;
@@ -1189,15 +1647,32 @@
       const vFlagLow   = volumeFlagAt(minIdx);
 
       const { dow, hour } = getDOWHour(startT);
+      const lowHour = getDOWHour(lowT).hour;
+      const riseHour = riseStartT ? getDOWHour(riseStartT).hour : null;
+      const highHour = getDOWHour(highT).hour;
 
       events.push({
-        i, startT, lowT, highT,
-        dow, hour,
+        i, startIdx:i, lowIdx:minIdx, riseStartIdx, highIdx:maxIdx,
+        startT, lowT, riseStartT, highT,
+        dow, hour, lowHour, riseHour, highHour,
         drop, rebound,
         sev, sevLabel,
+        startPrice:startP,
+        lowPrice:minPrice,
+        highPrice:maxPrice,
+        riseStartPrice: riseStartIdx !== null ? rows[riseStartIdx].p : null,
+        startZoneLabel: zoneNameAtIndex(i),
+        lowZoneLabel: zoneNameAtIndex(minIdx),
+        riseStartZoneLabel: riseStartIdx !== null ? zoneNameAtIndex(riseStartIdx) : '--',
+        highZoneLabel: zoneNameAtIndex(maxIdx),
+        estimatedSellUsd: estimateSellUsd(i, minIdx, drop),
         vStart, vLow,
         vStartHot: vFlagStart.flag,
-        vLowHot: vFlagLow.flag
+        vLowHot: vFlagLow.flag,
+        hoursToLow: hoursBetween(startT, lowT),
+        hoursToRiseStart: riseStartT ? hoursBetween(lowT, riseStartT) : NaN,
+        hoursLowToHigh: hoursBetween(lowT, highT),
+        hoursStartToHigh: hoursBetween(startT, highT)
       });
 
       i = Math.max(i, minIdx + minGap - 1);
@@ -1207,97 +1682,445 @@
     return events;
   }
 
-  function renderEvents(){
-    const events = buildBigDropEvents();
-    evtCountEl.textContent = String(events.length);
+  function createEmptyState(text){
+    const div = document.createElement('div');
+    div.className = 'emptyState';
+    div.textContent = text;
+    return div;
+  }
 
-    const bucket = new Map();
+  function buildHourList(events, key){
+    const count = new Map();
     for(const e of events){
-      const key = `${e.dow}-${e.hour}`;
-      if(!bucket.has(key)) bucket.set(key, {count:0, avgDrop:0, avgReb:0, maxReb:-Infinity, hot:0});
-      const b = bucket.get(key);
-      b.count += 1;
-      b.avgDrop += e.drop;
-      b.avgReb += e.rebound;
-      b.maxReb = Math.max(b.maxReb, e.rebound);
-      if(e.vLowHot || e.vStartHot) b.hot += 1;
+      const date = e[key];
+      if(!date) continue;
+      const h = getDOWHour(date).hour;
+      count.set(h, (count.get(h) || 0) + 1);
     }
+    return Array.from(count.entries()).sort((a,b)=> (b[1]-a[1]) || (a[0]-b[0])).slice(0,3);
+  }
 
-    const summary = Array.from(bucket.entries())
-      .map(([key, v])=>{
-        v.avgDrop /= v.count;
-        v.avgReb /= v.count;
-        const [dow,h] = key.split('-').map(Number);
-        return {dow,h, ...v};
-      })
-      .sort((a,b)=> (b.count-a.count) || (b.avgReb-a.avgReb));
+  function timeHintLabel(items){
+    if(!items.length) return '該当なし';
+    return items.map(([h]) => `${pad2(h)}時ごろ`).join(' / ');
+  }
 
-    const maxSummary = Math.max(6, Math.floor(Number(maxSummaryEl.value) || 12));
-    summaryEl.innerHTML = '';
-    if(summary.length === 0){
-      summaryEl.innerHTML = `<div class="small">大きな下落が検出されませんでした（しきい値を緩める/データ量不足の可能性）。</div>`;
-    }else{
-      summary.slice(0, maxSummary).forEach(s=>{
-        const box = document.createElement('div');
-        box.className = 'mutedBox';
-        const dowLabel = DOW[s.dow] ?? '?';
-        const hotRate = s.count ? Math.round(100 * (s.hot / s.count)) : 0;
+  function updateWeekdayButtonState(){
+    weekdayButtonsWrapEl.querySelectorAll('.weekdayBtn').forEach(btn => {
+      btn.classList.toggle('isActive', btn.dataset.dow === String(selectedDow));
+    });
+    selectedDowLabelEl.textContent = selectedDow === 'all' ? '全曜日' : `${DOW[Number(selectedDow)]}曜`;
+  }
 
-        box.innerHTML = `
-          <div style="font-weight:1000">${dowLabel}曜 ${String(s.h).padStart(2,'0')}時（UTC）</div>
-          <div class="small">発生回数: <b>${s.count}</b></div>
-          <div class="small">平均下落: <b>${(s.avgDrop*100).toFixed(1)}%</b></div>
-          <div class="small">平均反発: <b>${(s.avgReb*100).toFixed(1)}%</b>（最大 ${(s.maxReb*100).toFixed(1)}%）</div>
-          <div class="small">⚡割合: <b>${hotRate}%</b></div>
-        `;
-        summaryEl.appendChild(box);
-      });
-    }
+  function filterEventsBySelectedDow(events){
+    if(selectedDow === 'all') return events.slice();
+    return events.filter(e => e.dow === Number(selectedDow));
+  }
 
-    const maxEvents = Math.max(10, Math.floor(Number(maxEventsEl.value) || 30));
-    const list = events
+
+  function recentDateStrings(events, key, limit){
+    return events
+      .filter(e => e[key] instanceof Date)
       .slice()
-      .sort((a,b)=> (b.rebound-a.rebound) || (a.drop-b.drop))
-      .slice(0, maxEvents);
+      .sort((a,b) => b[key] - a[key])
+      .slice(0, limit)
+      .map(e => fmtNoYear(e[key]));
+  }
 
-    patternsEl.innerHTML = '';
-    if(list.length === 0){
-      patternsEl.innerHTML = `<div class="small">表示できる事例がありません（データ量が少ない/下落が小さい可能性）。</div>`;
+  function getStageInfo(event, key){
+    if(key === 'start'){
+      return { key:'start', label:'下がり始め', date:event.startT, price:event.startPrice, zone:event.startZoneLabel, colorClass:'start' };
+    }
+    if(key === 'low'){
+      return { key:'low', label:'底値', date:event.lowT, price:event.lowPrice, zone:event.lowZoneLabel, colorClass:'low' };
+    }
+    if(key === 'rise'){
+      return { key:'rise', label:'上がり始め', date:event.riseStartT, price:event.riseStartPrice, zone:event.riseStartZoneLabel, colorClass:'rise' };
+    }
+    return { key:'high', label:'最高値', date:event.highT, price:event.highPrice, zone:event.highZoneLabel, colorClass:'high' };
+  }
+
+  function timelineStepHTML(stage, isFocus){
+    const timeText = stage.date ? fmtNoYear(stage.date) : '見つからず';
+    const priceText = Number.isFinite(stage.price) ? stage.price.toFixed(6) : '--';
+    const zoneText = stage.zone || '--';
+    return `
+      <div class="timelineStep${isFocus ? ' isFocus' : ''}">
+        <span class="stepDot ${stage.colorClass}"></span>
+        <div>
+          <div class="stepTitle">${stage.label}</div>
+          <div class="stepMeta">${timeText}</div>
+          <div class="stepMeta">価格 <b>${priceText}</b> / 価格帯 <b>${escapeHTML(zoneText)}</b></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function buildEventDetailHTML(event, focusKey){
+    if(!event){
+      return '事例が見つかると、ここに詳細が表示されます。';
+    }
+
+    const dropPct = (event.drop * 100).toFixed(1);
+    const bouncePct = (event.rebound * 100).toFixed(1);
+    const sellEstimate = Number.isFinite(event.estimatedSellUsd)
+      ? `${fmtUsdCompact(event.estimatedSellUsd)} 前後`
+      : '出来高データ不足で計算不可';
+
+    const stages = ['start','low','rise','high']
+      .map(key => getStageInfo(event, key))
+      .filter(stage => stage.date || stage.key !== 'rise');
+
+    return `
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <span class="tag ${event.sev===4 ? 'tL4' : (event.sev===3 ? 'tL3' : 'tL2')}">${escapeHTML(event.sevLabel)}</span>
+        <b>${fmtNoYear(event.startT)}</b>
+      </div>
+      <div class="miniFlow">
+        価格の流れ：
+        <b>${event.startPrice.toFixed(6)}</b>
+        → <b>${event.lowPrice.toFixed(6)}</b>
+        ${event.riseStartT && Number.isFinite(event.riseStartPrice) ? `→ <b>${event.riseStartPrice.toFixed(6)}</b>` : ''}
+        → <b>${event.highPrice.toFixed(6)}</b><br>
+        下げ幅 <b>${dropPct}%</b> / 底値からの戻り <b>${bouncePct}%</b> / 売られた金額の目安 <b>${sellEstimate}</b>
+      </div>
+      <div class="timelineSteps">
+        ${stages.map(stage => timelineStepHTML(stage, stage.key === focusKey)).join('')}
+      </div>
+      <div class="eventMeta">
+        <div class="mutedBox">
+          <div style="font-weight:1000;font-size:13px">時間の長さ</div>
+          <div class="small" style="margin-top:6px">下がり始め → 底値：<b>${fmtHours(event.hoursToLow)}</b></div>
+          <div class="small">底値 → 上がり始め：<b>${fmtHours(event.hoursToRiseStart)}</b></div>
+          <div class="small">下がり始め → 最高値：<b>${fmtHours(event.hoursStartToHigh)}</b></div>
+        </div>
+        <div class="mutedBox">
+          <div style="font-weight:1000;font-size:13px">売りの大きさの目安</div>
+          <div class="small" style="margin-top:6px"><b>${sellEstimate}</b></div>
+          <div class="small">下落中の出来高と下げ幅から計算した目安です。</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function setEventDetail(event, focusKey = null){
+    eventGraphSelected = event ? { event, focusKey } : null;
+    eventDetailPanelEl.innerHTML = buildEventDetailHTML(event, focusKey);
+  }
+
+  function pointPopupText(event, pointKey){
+    const stage = getStageInfo(event, pointKey || 'start');
+    if(pointKey){
+      const p = Number.isFinite(stage.price) ? stage.price.toFixed(6) : '--';
+      return `${stage.label}<br>${fmtNoYear(stage.date)}<br>価格 ${p} / 価格帯 ${escapeHTML(stage.zone || '--')}`;
+    }
+    return `${escapeHTML(event.sevLabel)}<br>${fmtNoYear(event.startT)}<br>下げ幅 ${(event.drop*100).toFixed(1)}% / 底値からの戻り ${(event.rebound*100).toFixed(1)}%`;
+  }
+
+  function drawEventChart(){
+    if(!eventChartEl) return;
+
+    const c = eventChartEl;
+    const ctx = c.getContext('2d');
+    const rect = c.getBoundingClientRect();
+    const W = Math.max(320, Math.floor(rect.width || 320));
+    const left = 108;
+    const right = 18;
+    const top = 28;
+    const bottom = 24;
+    const rowH = 64;
+    const count = Math.max(1, eventGraphEvents.length);
+    const H = Math.max(220, top + count * rowH + bottom);
+
+    c.width = W;
+    c.height = H;
+    c.style.height = `${H}px`;
+
+    ctx.clearRect(0, 0, W, H);
+    eventGraphItems = [];
+
+    if(!eventGraphEvents.length){
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '12px system-ui';
+      ctx.fillText('表示できる事例がありません。', 12, 28);
       return;
     }
 
-    for(const e of list){
-      const div = document.createElement('div');
-      div.className = 'pattern';
+    const plotW = W - left - right;
+    const maxHours = Math.max(1, ...eventGraphEvents.map(e => Math.max(0.25, e.hoursStartToHigh || e.hoursToLow || 0.25)));
 
-      const tagClass = e.sev===4 ? 'tL4' : (e.sev===3 ? 'tL3' : 'tL2');
-      const dropPct = (e.drop*100).toFixed(1);
-      const rebPct = (e.rebound*100).toFixed(1);
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '11px system-ui';
+    ctx.fillText('時間の流れ →', left, 16);
 
-      const vStartStr = isFinite(e.vStart) ? `${e.vStart.toFixed(2)}${e.vStartHot?' ⚡':''}` : '--';
-      const vLowStr   = isFinite(e.vLow)   ? `${e.vLow.toFixed(2)}${e.vLowHot?' ⚡':''}` : '--';
+    eventGraphEvents.forEach((event, idx) => {
+      const rowTop = top + idx * rowH;
+      const rowMid = rowTop + rowH / 2;
+      const rowBottom = rowTop + rowH;
 
-      div.innerHTML = `
-        <div>
-          <span class="tag ${tagClass}">${e.sevLabel}</span>
-          <b>${fmtNoYear(e.startT)}</b>
-        </div>
-        <div class="small" style="margin-top:6px">
-          ${Math.floor(Number(lookDropEl.value)||6)}時間以内の最安値まで <b>${dropPct}%</b> 下落（底: ${fmtNoYear(e.lowT)}）
-          → その後${Math.floor(Number(lookTotalEl.value)||24)}時間枠で <b>${rebPct}%</b> 反発（高値: ${fmtNoYear(e.highT)}）
-        </div>
-        <div class="small" style="margin-top:6px">
-          出来高（開始/底）: <b>${vStartStr}</b> / <b>${vLowStr}</b> <span style="color:#6b7280">（⚡=出来高が上位）</span>
-        </div>
-      `;
-      patternsEl.appendChild(div);
+      if(idx % 2 === 0){
+        ctx.fillStyle = 'rgba(248,250,252,.92)';
+        ctx.fillRect(0, rowTop, W, rowH);
+      }
+
+      const [label1, label2] = fmtNoYear(event.startT).split(' ');
+      ctx.fillStyle = '#111827';
+      ctx.font = '12px system-ui';
+      ctx.fillText(label1 || '', 8, rowTop + 20);
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px system-ui';
+      ctx.fillText(label2 || '', 8, rowTop + 38);
+
+      ctx.strokeStyle = 'rgba(148,163,184,.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(left, rowMid + 0.5);
+      ctx.lineTo(W - right, rowMid + 0.5);
+      ctx.stroke();
+
+      const riseElapsed = event.riseStartT ? (event.hoursToLow + Math.max(0, event.hoursToRiseStart || 0)) : event.hoursToLow;
+      const points = [
+        { key:'start', x:left, price:event.startPrice, color:'#2563eb', hidden:false },
+        { key:'low', x:left + plotW * Math.min(1, Math.max(0, event.hoursToLow) / maxHours), price:event.lowPrice, color:'#ef4444', hidden:false },
+        { key:'rise', x:left + plotW * Math.min(1, Math.max(0, riseElapsed) / maxHours), price:Number.isFinite(event.riseStartPrice) ? event.riseStartPrice : event.lowPrice, color:'#16a34a', hidden:!event.riseStartT },
+        { key:'high', x:left + plotW * Math.min(1, Math.max(0.25, event.hoursStartToHigh || event.hoursToLow || 0.25) / maxHours), price:event.highPrice, color:'#f59e0b', hidden:false }
+      ];
+
+      const visiblePrices = points.filter(p => !p.hidden && Number.isFinite(p.price)).map(p => p.price);
+      const pMin = Math.min(...visiblePrices);
+      const pMax = Math.max(...visiblePrices);
+      const band = 18;
+      const yOf = (price) => rowMid + band - ((price - pMin) / ((pMax - pMin) || 1)) * band * 2;
+
+      points.forEach(point => {
+        point.y = yOf(point.price);
+      });
+
+      const isHoveredRow = eventGraphHover && eventGraphHover.rowIndex === idx;
+      ctx.strokeStyle = isHoveredRow ? '#111827' : 'rgba(75,85,99,.72)';
+      ctx.lineWidth = isHoveredRow ? 2.5 : 2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      let started = false;
+      points.forEach(point => {
+        if(point.hidden) return;
+        if(!started){
+          ctx.moveTo(point.x, point.y);
+          started = true;
+        }else{
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      ctx.stroke();
+
+      points.forEach(point => {
+        if(point.hidden) return;
+        const isPointHover = isHoveredRow && eventGraphHover.pointKey === point.key;
+        ctx.fillStyle = point.color;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, isPointHover ? 6 : 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, isPointHover ? 6 : 5, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      eventGraphItems.push({
+        event,
+        rowIndex: idx,
+        rowTop,
+        rowBottom,
+        rowMid,
+        points: points.filter(point => !point.hidden)
+      });
+    });
+  }
+
+  function showEventChartPopup(hit, clientX, clientY){
+    if(!hit){
+      eventChartPopupEl.style.display = 'none';
+      return;
+    }
+
+    eventChartPopupEl.style.display = 'block';
+    eventChartPopupEl.innerHTML = pointPopupText(hit.event, hit.pointKey);
+
+    const rect = eventChartEl.getBoundingClientRect();
+    const chartW = eventChartEl.width;
+    const chartH = eventChartEl.height;
+    const localX = clientX - rect.left;
+    const localY = clientY - rect.top;
+
+    let left = localX + 12;
+    let top = localY + 12;
+    const maxW = Math.min(chartW - 16, 360);
+    eventChartPopupEl.style.maxWidth = `${maxW}px`;
+
+    if(left > chartW - maxW - 8) left = localX - maxW - 12;
+    if(top > chartH - 72) top = localY - 72;
+
+    eventChartPopupEl.style.left = `${Math.max(8, left)}px`;
+    eventChartPopupEl.style.top = `${Math.max(8, top)}px`;
+  }
+
+  function findEventChartHit(clientX, clientY){
+    if(!eventGraphItems.length) return null;
+    const rect = eventChartEl.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    let bestPoint = null;
+    let bestDist = Infinity;
+
+    eventGraphItems.forEach(item => {
+      item.points.forEach(point => {
+        const d = Math.hypot(point.x - x, point.y - y);
+        if(d < bestDist){
+          bestDist = d;
+          bestPoint = { event:item.event, rowIndex:item.rowIndex, pointKey:point.key, x:point.x, y:point.y };
+        }
+      });
+    });
+
+    if(bestPoint && bestDist <= 26){
+      return bestPoint;
+    }
+
+    const rowHit = eventGraphItems.find(item => y >= item.rowTop && y <= item.rowBottom);
+    if(rowHit){
+      return { event:rowHit.event, rowIndex:rowHit.rowIndex, pointKey:null, x, y };
+    }
+    return null;
+  }
+
+  function updateEventChartFromClient(clientX, clientY){
+    const hit = findEventChartHit(clientX, clientY);
+    eventGraphHover = hit ? { rowIndex:hit.rowIndex, pointKey:hit.pointKey } : null;
+    drawEventChart();
+    showEventChartPopup(hit, clientX, clientY);
+    if(hit){
+      setEventDetail(hit.event, hit.pointKey);
     }
   }
 
-  // simulator
-  const sellEl = $('sell');
-  const avgEl = $('avgPrice');
-  const profitEl = $('profit');
+  function hideEventChartHover(){
+    eventGraphHover = null;
+    eventChartPopupEl.style.display = 'none';
+    drawEventChart();
+    if(eventGraphSelected){
+      setEventDetail(eventGraphSelected.event, eventGraphSelected.focusKey);
+    }
+  }
+
+  function updateWeekdayButtonState(){
+    weekdayButtonsWrapEl.querySelectorAll('.weekdayBtn').forEach(btn => {
+      btn.classList.toggle('isActive', btn.dataset.dow === String(selectedDow));
+    });
+    selectedDowLabelEl.textContent = selectedDow === 'all' ? '全曜日' : `${DOW[Number(selectedDow)]}曜`;
+  }
+
+  function filterEventsBySelectedDow(events){
+    if(selectedDow === 'all') return events.slice();
+    return events.filter(e => e.dow === Number(selectedDow));
+  }
+
+  function renderSummary(events){
+    summaryEl.innerHTML = '';
+
+    const filtered = filterEventsBySelectedDow(events)
+      .slice()
+      .sort((a,b) => b.startT - a.startT);
+
+    const tzLabel = getTimeZoneLabel();
+    weekdaySummaryTextEl.textContent = selectedDow === 'all'
+      ? `全曜日を表示中（${tzLabel}）`
+      : `${DOW[Number(selectedDow)]}曜日を表示中（${tzLabel}）`;
+
+    if(!filtered.length){
+      summaryEl.appendChild(createEmptyState('選択した曜日では事例が見つかりませんでした。'));
+      eventGraphEvents = [];
+      setEventDetail(null);
+      drawEventChart();
+      return filtered;
+    }
+
+    const limit = Math.max(3, Math.min(8, Math.floor(Number(maxSummaryEl.value) || 5)));
+    const cards = [
+      { title:'下がり始めた日時', key:'startT' },
+      { title:'底値をつけた日時', key:'lowT' },
+      { title:'上がり始めた日時', key:'riseStartT' },
+      { title:'最高値をつけた日時', key:'highT' }
+    ];
+
+    cards.forEach(card => {
+      const box = document.createElement('div');
+      box.className = 'mutedBox';
+      const items = recentDateStrings(filtered, card.key, limit);
+      box.innerHTML = `<div style="font-weight:1000">${card.title}</div>${
+        items.length
+          ? `<ul class="timeList">${items.map(v => `<li>${escapeHTML(v)}</li>`).join('')}</ul>`
+          : `<div class="small" style="margin-top:8px">該当なし</div>`
+      }`;
+      summaryEl.appendChild(box);
+    });
+
+    eventGraphEvents = filtered.slice(0, Math.min(12, Math.max(6, Math.floor(Number(maxEventsEl.value) || 12))));
+    drawEventChart();
+    setEventDetail(eventGraphEvents[0] || filtered[0], null);
+    return filtered;
+  }
+
+  function renderPatterns(filteredEvents){
+    patternsEl.innerHTML = '';
+
+    if(!filteredEvents.length){
+      patternsEl.appendChild(createEmptyState('表示できる事例がありません。曜日を変更するか、しきい値を調整してください。'));
+      return;
+    }
+
+    const maxEvents = Math.max(10, Math.floor(Number(maxEventsEl.value) || 30));
+    const list = filteredEvents.slice(0, maxEvents);
+
+    list.forEach(e => {
+      const div = document.createElement('div');
+      div.className = 'pattern';
+
+      const dropPct = (e.drop * 100).toFixed(1);
+      const bouncePct = (e.rebound * 100).toFixed(1);
+      const sellEstimate = Number.isFinite(e.estimatedSellUsd)
+        ? `${fmtUsdCompact(e.estimatedSellUsd)} 前後`
+        : '出来高データ不足で計算不可';
+
+      const stages = ['start','low','rise','high']
+        .map(key => getStageInfo(e, key))
+        .filter(stage => stage.date || stage.key !== 'rise');
+
+      div.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <span class="tag ${e.sev===4 ? 'tL4' : (e.sev===3 ? 'tL3' : 'tL2')}">${escapeHTML(e.sevLabel)}</span>
+          <b>${fmtNoYear(e.startT)}</b>
+        </div>
+        <div class="miniFlow">
+          下げ幅 <b>${dropPct}%</b> / 底値からの戻り <b>${bouncePct}%</b> / 売られた金額の目安 <b>${sellEstimate}</b>
+        </div>
+        <div class="timelineSteps">
+          ${stages.map(stage => timelineStepHTML(stage, false)).join('')}
+        </div>
+      `;
+      patternsEl.appendChild(div);
+    });
+  }
+
+  function renderEvents(){
+    lastEvents = buildBigDropEvents();
+    evtCountEl.textContent = String(lastEvents.length);
+    updateWeekdayButtonState();
+    const filtered = renderSummary(lastEvents);
+    renderPatterns(filtered);
+  }
 
   function calcSimulator(){
     const pEls = document.querySelectorAll('.buyP');
@@ -1307,9 +2130,9 @@
     let totalQty = 0;
 
     for(let i=0;i<pEls.length;i++){
-      const p = Number(pEls[i].value);
-      const u = Number(uEls[i].value);
-      if(isFinite(p) && isFinite(u) && p>0 && u>0){
+      const p = toNum(pEls[i].value);
+      const u = toNum(uEls[i].value);
+      if(Number.isFinite(p) && Number.isFinite(u) && p>0 && u>0){
         totalUsd += u;
         totalQty += u / p;
       }
@@ -1322,8 +2145,8 @@
     const avgPrice = totalUsd / totalQty;
     avgEl.textContent = `平均購入価格：${avgPrice.toFixed(6)}（合計投資 $${totalUsd.toFixed(2)}）`;
 
-    const sell = Number(sellEl.value);
-    if(!isFinite(sell) || sell<=0){
+    const sell = toNum(sellEl.value);
+    if(!Number.isFinite(sell) || sell<=0){
       profitEl.textContent = '損益：--';
       return;
     }
@@ -1344,6 +2167,37 @@
       drawChart();
       renderEvents();
     });
+    scheduleSave();
+  }
+
+  function clearLoadedData(withConfirm = true){
+    if(withConfirm){
+      const ok = window.confirm('読み込んだデータと保存済みの読み込み内容をクリアします。よろしいですか？');
+      if(!ok) return;
+    }
+
+    rows = [];
+    thresholdsGlobal = null;
+    thresholdsRolling = null;
+    minP = NaN;
+    maxP = NaN;
+    hoverIdx = null;
+    lastEvents = [];
+    inputEl.value = '';
+    fileEl.value = '';
+    fileNameEl.textContent = '未選択';
+    evtCountEl.textContent = '0';
+    summaryEl.innerHTML = '';
+    eventGraphEvents = [];
+    eventGraphHover = null;
+    eventChartPopupEl.style.display = 'none';
+    setEventDetail(null);
+    drawEventChart();
+    patternsEl.innerHTML = '';
+    popupEl.style.display = 'none';
+    drawChart();
+    renderEvents();
+    scheduleSave();
   }
 
   function closeSheets(){
@@ -1352,6 +2206,7 @@
     sheetMeaningEl.classList.remove('show');
     document.body.style.overflow = '';
   }
+
   function openSheet(which){
     overlayEl.classList.add('show');
     document.body.style.overflow = 'hidden';
@@ -1364,16 +2219,110 @@
     }
   }
 
+  function saveState(){
+    const pEls = Array.from(document.querySelectorAll('.buyP')).map(el => el.value);
+    const uEls = Array.from(document.querySelectorAll('.buyU')).map(el => el.value);
+
+    safeLocalSet({
+      fileName: fileNameEl.textContent,
+      rawText: inputEl.value,
+      selectedDow,
+      settingsOpen: settingsDetailsEl.open,
+      summaryOpen: summaryBoxEl.open,
+      tzMode: tzModeEl.value,
+      rollOn: rollOnEl.checked,
+      rollWin: rollWinEl.value,
+      volWin: volWinEl.value,
+      volTop: volTopEl.value,
+      dropPct: dropPctEl.value,
+      lookDrop: lookDropEl.value,
+      lookTotal: lookTotalEl.value,
+      minGap: minGapEl.value,
+      maxEvents: maxEventsEl.value,
+      maxSummary: maxSummaryEl.value,
+      showBands: showBandsEl.checked,
+      showGrid: showGridEl.checked,
+      showVolInPopup: showVolInPopupEl.checked,
+      sell: sellEl.value,
+      buyPrices: pEls,
+      buyUsd: uEls
+    });
+  }
+
+  function restoreState(){
+    const state = safeLocalGet();
+    if(!state) return;
+
+    if(state.settingsOpen === true) settingsDetailsEl.open = true;
+    if(state.settingsOpen === false) settingsDetailsEl.open = false;
+    if(state.summaryOpen === true) summaryBoxEl.open = true;
+    if(state.summaryOpen === false) summaryBoxEl.open = false;
+
+    if(['utc','jst','local'].includes(state.tzMode)) tzModeEl.value = state.tzMode;
+    if(typeof state.rollOn === 'boolean') rollOnEl.checked = state.rollOn;
+    if(state.rollWin != null) rollWinEl.value = state.rollWin;
+    if(state.volWin != null) volWinEl.value = state.volWin;
+    if(state.volTop != null) volTopEl.value = state.volTop;
+    if(state.dropPct != null) dropPctEl.value = state.dropPct;
+    if(state.lookDrop != null) lookDropEl.value = state.lookDrop;
+    if(state.lookTotal != null) lookTotalEl.value = state.lookTotal;
+    if(state.minGap != null) minGapEl.value = state.minGap;
+    if(state.maxEvents != null) maxEventsEl.value = state.maxEvents;
+    if(state.maxSummary != null) maxSummaryEl.value = state.maxSummary;
+    if(typeof state.showBands === 'boolean') showBandsEl.checked = state.showBands;
+    if(typeof state.showGrid === 'boolean') showGridEl.checked = state.showGrid;
+    if(typeof state.showVolInPopup === 'boolean') showVolInPopupEl.checked = state.showVolInPopup;
+    if(state.sell != null) sellEl.value = state.sell;
+
+    const pEls = document.querySelectorAll('.buyP');
+    const uEls = document.querySelectorAll('.buyU');
+    if(Array.isArray(state.buyPrices)){
+      state.buyPrices.forEach((v,i) => { if(pEls[i]) pEls[i].value = v ?? ''; });
+    }
+    if(Array.isArray(state.buyUsd)){
+      state.buyUsd.forEach((v,i) => { if(uEls[i]) uEls[i].value = v ?? ''; });
+    }
+
+    if(state.selectedDow === 'all' || /^[0-6]$/.test(String(state.selectedDow))){
+      selectedDow = String(state.selectedDow);
+    }
+
+    if(state.rawText){
+      inputEl.value = state.rawText;
+      fileNameEl.textContent = state.fileName || '保存済みデータ';
+      parseText(state.rawText);
+    }
+  }
+
+  function handleSettingsChanged(e){
+    if(e?.target === tzModeEl && inputEl.value.trim()){
+      parseText(inputEl.value);
+    }
+    analyzeAll();
+  }
+
   function bind(){
+    restoreState();
+
     fileEl.addEventListener('change', async () => {
       const f = fileEl.files && fileEl.files[0];
       if(!f) return;
-      fileNameEl.textContent = f.name;
-      const text = await f.text();
-      inputEl.value = text; // keep for tz re-parse
-      parseText(text);
-      analyzeAll();
+
+      try{
+        const result = await fileToNormalizedText(f);
+        const text = typeof result === 'string' ? result : result.text;
+        const sheetName = typeof result === 'object' && result ? result.sheetName : '';
+
+        inputEl.value = text;
+        fileNameEl.textContent = sheetName ? `${f.name} / ${sheetName}` : f.name;
+        parseText(text);
+        analyzeAll();
+      }catch(err){
+        alert(err?.message || 'ファイルを読み込めませんでした。');
+      }
     });
+
+    btnClearDataEl.addEventListener('click', () => clearLoadedData(true));
 
     inputEl.addEventListener('input', () => {
       parseText(inputEl.value);
@@ -1395,17 +2344,42 @@
     });
     chartEl.addEventListener('pointerup', () => requestRedraw());
 
-    document.addEventListener('input', (e) => {
-      if(e.target.matches('.buyP,.buyU,#sell')) calcSimulator();
+    eventChartEl.addEventListener('pointermove', (e) => updateEventChartFromClient(e.clientX, e.clientY));
+    eventChartEl.addEventListener('pointerenter', (e) => updateEventChartFromClient(e.clientX, e.clientY));
+    eventChartEl.addEventListener('pointerleave', hideEventChartHover);
+    eventChartEl.addEventListener('pointerdown', (e) => {
+      eventChartEl.setPointerCapture?.(e.pointerId);
+      updateEventChartFromClient(e.clientX, e.clientY);
+    });
+    eventChartEl.addEventListener('pointerup', () => {});
 
-      if(e.target.matches('#tzMode,#rollOn,#rollWin,#volWin,#volTop,#dropPct,#lookDrop,#lookTotal,#minGap,#maxEvents,#maxSummary,#showBands,#showGrid,#showVolInPopup')){
-        if(e.target.matches('#tzMode')){
-          if(inputEl.value.trim()){
-            parseText(inputEl.value);
-          }
-        }
-        analyzeAll();
-      }
+    [
+      tzModeEl, rollOnEl, rollWinEl, volWinEl, volTopEl,
+      dropPctEl, lookDropEl, lookTotalEl, minGapEl, maxEventsEl, maxSummaryEl,
+      showBandsEl, showGridEl, showVolInPopupEl
+    ].forEach(el => {
+      el.addEventListener('input', handleSettingsChanged);
+      el.addEventListener('change', handleSettingsChanged);
+    });
+
+    document.querySelectorAll('.buyP,.buyU,#sell').forEach(el => {
+      el.addEventListener('input', () => {
+        calcSimulator();
+        scheduleSave();
+      });
+    });
+
+    settingsDetailsEl.addEventListener('toggle', scheduleSave);
+    summaryBoxEl.addEventListener('toggle', scheduleSave);
+
+    weekdayButtonsWrapEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.weekdayBtn');
+      if(!btn) return;
+      selectedDow = btn.dataset.dow;
+      updateWeekdayButtonState();
+      const filtered = renderSummary(lastEvents);
+      renderPatterns(filtered);
+      scheduleSave();
     });
 
     btnLegendEl.addEventListener('click', () => openSheet('legend'));
@@ -1417,6 +2391,7 @@
 
     drawChart();
     calcSimulator();
+    analyzeAll();
   }
 
   bind();
