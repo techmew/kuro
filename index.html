@@ -748,16 +748,16 @@
         <button type="button" class="weekdayBtn" data-dow="6">土</button>
       </div>
 
-      <div class="small" id="weekdaySummaryText" style="margin-top:8px">全曜日を表示中です。</div>
+      <div class="small" id="weekdaySummaryText" style="margin-top:8px">新しい日付の事例から順に表示します。</div>
 
       <div class="sumgrid" id="summary"></div>
 
       <div class="eventVizCard">
-        <div style="font-weight:1000">時系列グラフ</div>
+        <div style="font-weight:1000">時系列グラフ（上ほど新しい事例）</div>
         <div class="eventLegend">
           <span class="eventLegendItem"><span class="legendSwatch sw-start"></span>下がり始め</span>
           <span class="eventLegendItem"><span class="legendSwatch sw-low"></span>底値</span>
-          <span class="eventLegendItem"><span class="legendSwatch sw-rise"></span>上がり始め</span>
+          <span class="eventLegendItem"><span class="legendSwatch sw-rise"></span>買い始め</span>
           <span class="eventLegendItem"><span class="legendSwatch sw-high"></span>最高値</span>
         </div>
 
@@ -766,12 +766,13 @@
           <div id="eventChartPopup"></div>
         </div>
 
-        <div id="eventDetailPanel" class="mutedBox">事例が見つかると、ここに詳細が表示されます。</div>
+        <div id="eventDetailPanel" class="mutedBox">最新の事例が上に来ます。グラフや一覧を触ると、ここにその流れが表示されます。</div>
       </div>
     </details>
 
 
     <div style="height:10px"></div>
+    <div class="small" style="margin-bottom:8px">一覧も新しい日付の事例から順に並びます。</div>
     <div id="patterns"></div>
   </div>
 
@@ -1070,6 +1071,23 @@
     const map = {};
     for(const p of parts) map[p.type] = p.value;
     return `${map.month}/${map.day}（${map.weekday}） ${map.hour}:${map.minute}`;
+  }
+
+  function fmtMonthDayTime(date){
+    if(!(date instanceof Date)) return '--';
+    const tz = getTimeZoneName();
+    const opt = { timeZone: tz, month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false };
+    const parts = new Intl.DateTimeFormat('ja-JP', opt).formatToParts(date);
+    const map = {};
+    for(const p of parts) map[p.type] = p.value;
+    return `${map.month}/${map.day} ${map.hour}:${map.minute}`;
+  }
+
+  function stageShortLabel(key){
+    if(key === 'start') return '下';
+    if(key === 'low') return '底';
+    if(key === 'rise') return '買';
+    return '高';
   }
 
   function fmtAxisDate(date){
@@ -1722,7 +1740,7 @@
     return events
       .filter(e => e[key] instanceof Date)
       .slice()
-      .sort((a,b) => b[key] - a[key])
+      .sort((a,b) => a[key] - b[key])
       .slice(0, limit)
       .map(e => fmtNoYear(e[key]));
   }
@@ -1735,7 +1753,7 @@
       return { key:'low', label:'底値', date:event.lowT, price:event.lowPrice, zone:event.lowZoneLabel, colorClass:'low' };
     }
     if(key === 'rise'){
-      return { key:'rise', label:'上がり始め', date:event.riseStartT, price:event.riseStartPrice, zone:event.riseStartZoneLabel, colorClass:'rise' };
+      return { key:'rise', label:'買い始め', date:event.riseStartT, price:event.riseStartPrice, zone:event.riseStartZoneLabel, colorClass:'rise' };
     }
     return { key:'high', label:'最高値', date:event.highT, price:event.highPrice, zone:event.highZoneLabel, colorClass:'high' };
   }
@@ -1758,7 +1776,7 @@
 
   function buildEventDetailHTML(event, focusKey){
     if(!event){
-      return '事例が見つかると、ここに詳細が表示されます。';
+      return '事例が見つかると、ここに下がり始め→底値→買い始め→最高値の流れが表示されます。';
     }
 
     const dropPct = (event.drop * 100).toFixed(1);
@@ -1777,7 +1795,7 @@
         <b>${fmtNoYear(event.startT)}</b>
       </div>
       <div class="miniFlow">
-        価格の流れ：
+        価格の流れ（時系列）：
         <b>${event.startPrice.toFixed(6)}</b>
         → <b>${event.lowPrice.toFixed(6)}</b>
         ${event.riseStartT && Number.isFinite(event.riseStartPrice) ? `→ <b>${event.riseStartPrice.toFixed(6)}</b>` : ''}
@@ -1791,7 +1809,7 @@
         <div class="mutedBox">
           <div style="font-weight:1000;font-size:13px">時間の長さ</div>
           <div class="small" style="margin-top:6px">下がり始め → 底値：<b>${fmtHours(event.hoursToLow)}</b></div>
-          <div class="small">底値 → 上がり始め：<b>${fmtHours(event.hoursToRiseStart)}</b></div>
+          <div class="small">底値 → 買い始め：<b>${fmtHours(event.hoursToRiseStart)}</b></div>
           <div class="small">下がり始め → 最高値：<b>${fmtHours(event.hoursStartToHigh)}</b></div>
         </div>
         <div class="mutedBox">
@@ -1814,7 +1832,7 @@
       const p = Number.isFinite(stage.price) ? stage.price.toFixed(6) : '--';
       return `${stage.label}<br>${fmtNoYear(stage.date)}<br>価格 ${p} / 価格帯 ${escapeHTML(stage.zone || '--')}`;
     }
-    return `${escapeHTML(event.sevLabel)}<br>${fmtNoYear(event.startT)}<br>下げ幅 ${(event.drop*100).toFixed(1)}% / 底値からの戻り ${(event.rebound*100).toFixed(1)}%`;
+    return `${escapeHTML(event.sevLabel)}<br>${fmtNoYear(event.startT)}<br>下げ幅 ${(event.drop*100).toFixed(1)}% / 底値からの戻り ${(event.rebound*100).toFixed(1)}%<br>買い始め ${event.riseStartT ? fmtNoYear(event.riseStartT) : '見つからず'} / 最高値 ${fmtNoYear(event.highT)}`;
   }
 
   function drawEventChart(){
@@ -1824,13 +1842,13 @@
     const ctx = c.getContext('2d');
     const rect = c.getBoundingClientRect();
     const W = Math.max(320, Math.floor(rect.width || 320));
-    const left = 108;
+    const left = 118;
     const right = 18;
-    const top = 28;
-    const bottom = 24;
-    const rowH = 64;
+    const top = 34;
+    const bottom = 42;
+    const rowH = 78;
     const count = Math.max(1, eventGraphEvents.length);
-    const H = Math.max(220, top + count * rowH + bottom);
+    const H = Math.max(240, top + count * rowH + bottom);
 
     c.width = W;
     c.height = H;
@@ -1848,10 +1866,27 @@
 
     const plotW = W - left - right;
     const maxHours = Math.max(1, ...eventGraphEvents.map(e => Math.max(0.25, e.hoursStartToHigh || e.hoursToLow || 0.25)));
+    const tickCount = Math.max(3, Math.min(6, Math.round(maxHours)));
 
     ctx.fillStyle = '#6b7280';
     ctx.font = '11px system-ui';
-    ctx.fillText('時間の流れ →', left, 16);
+    ctx.fillText('時間の流れ（経過時間）→', left, 16);
+
+    // top ticks
+    ctx.strokeStyle = 'rgba(148,163,184,.25)';
+    ctx.lineWidth = 1;
+    for(let t=0; t<=tickCount; t++){
+      const hours = maxHours * (t / tickCount);
+      const xx = left + plotW * (t / tickCount);
+      ctx.beginPath();
+      ctx.moveTo(xx + 0.5, top - 8);
+      ctx.lineTo(xx + 0.5, H - bottom + 6);
+      ctx.stroke();
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '10px system-ui';
+      const label = `${Math.round(hours * 10) / 10}h`;
+      ctx.fillText(label, Math.max(left, Math.min(W - right - 28, xx - 10)), 28);
+    }
 
     eventGraphEvents.forEach((event, idx) => {
       const rowTop = top + idx * rowH;
@@ -1866,10 +1901,10 @@
       const [label1, label2] = fmtNoYear(event.startT).split(' ');
       ctx.fillStyle = '#111827';
       ctx.font = '12px system-ui';
-      ctx.fillText(label1 || '', 8, rowTop + 20);
+      ctx.fillText(label1 || '', 8, rowTop + 24);
       ctx.fillStyle = '#6b7280';
       ctx.font = '11px system-ui';
-      ctx.fillText(label2 || '', 8, rowTop + 38);
+      ctx.fillText(label2 || '', 8, rowTop + 42);
 
       ctx.strokeStyle = 'rgba(148,163,184,.35)';
       ctx.lineWidth = 1;
@@ -1880,16 +1915,16 @@
 
       const riseElapsed = event.riseStartT ? (event.hoursToLow + Math.max(0, event.hoursToRiseStart || 0)) : event.hoursToLow;
       const points = [
-        { key:'start', x:left, price:event.startPrice, color:'#2563eb', hidden:false },
-        { key:'low', x:left + plotW * Math.min(1, Math.max(0, event.hoursToLow) / maxHours), price:event.lowPrice, color:'#ef4444', hidden:false },
-        { key:'rise', x:left + plotW * Math.min(1, Math.max(0, riseElapsed) / maxHours), price:Number.isFinite(event.riseStartPrice) ? event.riseStartPrice : event.lowPrice, color:'#16a34a', hidden:!event.riseStartT },
-        { key:'high', x:left + plotW * Math.min(1, Math.max(0.25, event.hoursStartToHigh || event.hoursToLow || 0.25) / maxHours), price:event.highPrice, color:'#f59e0b', hidden:false }
+        { key:'start', x:left, price:event.startPrice, color:'#2563eb', hidden:false, date:event.startT },
+        { key:'low', x:left + plotW * Math.min(1, Math.max(0, event.hoursToLow) / maxHours), price:event.lowPrice, color:'#ef4444', hidden:false, date:event.lowT },
+        { key:'rise', x:left + plotW * Math.min(1, Math.max(0, riseElapsed) / maxHours), price:Number.isFinite(event.riseStartPrice) ? event.riseStartPrice : event.lowPrice, color:'#16a34a', hidden:!event.riseStartT, date:event.riseStartT },
+        { key:'high', x:left + plotW * Math.min(1, Math.max(0.25, event.hoursStartToHigh || event.hoursToLow || 0.25) / maxHours), price:event.highPrice, color:'#f59e0b', hidden:false, date:event.highT }
       ];
 
       const visiblePrices = points.filter(p => !p.hidden && Number.isFinite(p.price)).map(p => p.price);
       const pMin = Math.min(...visiblePrices);
       const pMax = Math.max(...visiblePrices);
-      const band = 18;
+      const band = 20;
       const yOf = (price) => rowMid + band - ((price - pMin) / ((pMax - pMin) || 1)) * band * 2;
 
       points.forEach(point => {
@@ -1926,6 +1961,21 @@
         ctx.beginPath();
         ctx.arc(point.x, point.y, isPointHover ? 6 : 5, 0, Math.PI * 2);
         ctx.stroke();
+
+        const label = `${stageShortLabel(point.key)} ${fmtMonthDayTime(point.date)}`;
+        ctx.font = '10px system-ui';
+        const tw = ctx.measureText(label).width + 10;
+        let lx = point.x - tw / 2;
+        lx = Math.max(left, Math.min(W - right - tw, lx));
+        let ly = point.y - 18;
+        if(ly < rowTop + 8) ly = point.y + 10;
+        ctx.fillStyle = 'rgba(255,255,255,.94)';
+        ctx.fillRect(lx, ly, tw, 14);
+        ctx.strokeStyle = 'rgba(209,213,219,.9)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(lx, ly, tw, 14);
+        ctx.fillStyle = '#111827';
+        ctx.fillText(label, lx + 5, ly + 10.5);
       });
 
       eventGraphItems.push({
@@ -1937,6 +1987,26 @@
         points: points.filter(point => !point.hidden)
       });
     });
+
+    // bottom axis
+    ctx.strokeStyle = 'rgba(148,163,184,.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(left, H - bottom + 8.5);
+    ctx.lineTo(W - right, H - bottom + 8.5);
+    ctx.stroke();
+    for(let t=0; t<=tickCount; t++){
+      const hours = maxHours * (t / tickCount);
+      const xx = left + plotW * (t / tickCount);
+      ctx.beginPath();
+      ctx.moveTo(xx + 0.5, H - bottom + 8);
+      ctx.lineTo(xx + 0.5, H - bottom + 14);
+      ctx.stroke();
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '10px system-ui';
+      const label = `${Math.round(hours * 10) / 10}h`;
+      ctx.fillText(label, Math.max(left, Math.min(W - right - 28, xx - 10)), H - bottom + 28);
+    }
   }
 
   function showEventChartPopup(hit, clientX, clientY){
@@ -2036,8 +2106,8 @@
 
     const tzLabel = getTimeZoneLabel();
     weekdaySummaryTextEl.textContent = selectedDow === 'all'
-      ? `全曜日を表示中（${tzLabel}）`
-      : `${DOW[Number(selectedDow)]}曜日を表示中（${tzLabel}）`;
+      ? `全曜日を新しい日付順で表示中（${tzLabel}）`
+      : `${DOW[Number(selectedDow)]}曜日を新しい日付順で表示中（${tzLabel}）`;
 
     if(!filtered.length){
       summaryEl.appendChild(createEmptyState('選択した曜日では事例が見つかりませんでした。'));
@@ -2049,10 +2119,10 @@
 
     const limit = Math.max(3, Math.min(8, Math.floor(Number(maxSummaryEl.value) || 5)));
     const cards = [
-      { title:'下がり始めた日時', key:'startT' },
-      { title:'底値をつけた日時', key:'lowT' },
-      { title:'上がり始めた日時', key:'riseStartT' },
-      { title:'最高値をつけた日時', key:'highT' }
+      { title:'直近の下がり始め', key:'startT' },
+      { title:'直近の底値', key:'lowT' },
+      { title:'直近の買い始め', key:'riseStartT' },
+      { title:'直近の最高値', key:'highT' }
     ];
 
     cards.forEach(card => {
@@ -2082,7 +2152,10 @@
     }
 
     const maxEvents = Math.max(10, Math.floor(Number(maxEventsEl.value) || 30));
-    const list = filteredEvents.slice(0, maxEvents);
+    const list = filteredEvents
+      .slice()
+      .sort((a,b) => b.startT - a.startT)
+      .slice(0, maxEvents);
 
     list.forEach(e => {
       const div = document.createElement('div');
