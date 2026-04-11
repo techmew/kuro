@@ -560,7 +560,7 @@
     <div class="small">
       ✅ 初期設定は <b>UTC</b> のままです。<br>
       ✅ 入力した設定・シミュレーター・読み込んだデータは、ブラウザを閉じても自動で残ります。<br>
-      ✅ Excel（.xlsx / .xls）は先頭シートを読み込みます。
+      ✅ Excel（.xlsx / .xls）は先頭シートを読み込みます。スマホで選べない場合に備えて、ファイル選択は広めに許可しています。
     </div>
   </div>
 
@@ -571,7 +571,7 @@
         📁 ファイルを選ぶ
       </label>
       <button id="btnClearData" class="btnDanger" type="button">🗑️ 読み込みデータをクリア</button>
-      <input type="file" id="file" accept=".csv,.txt,.xlsx,.xls">
+      <input type="file" id="file" accept=".csv,.txt,.xlsx,.xls,text/csv,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/octet-stream,*/*">
       <div class="fileName" id="fileName">未選択</div>
     </div>
     <div class="small" style="margin-top:8px">
