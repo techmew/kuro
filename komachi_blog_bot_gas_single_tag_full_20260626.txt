@@ -1,0 +1,781 @@
+# Komachi Blog Bot GAS 更新全文メモ
+
+更新対象：
+- GAS：固定タグ解析を単独タグ形式に変更
+- k1：固定タグ指示を直接更新済み
+
+新しい固定タグ：
+【TITLE】
+【CATEGORY】
+【META_DESCRIPTION】
+【HTML】
+【X_POST】
+【IMAGE_PROMPT】
+
+以下、GAS全文。
+
+```javascript
+/************************************
+ * Komachi Blog Bot GAS
+ * Slack file_shared 現行運用対応版
+ *
+ * 更新内容：
+ * - k1固定タグを START / END 形式ではなく、単独タグ形式に統一
+ * - 必須タグ：
+ *   【TITLE】
+ *   【CATEGORY】
+ *   【META_DESCRIPTION】
+ *   【HTML】
+ *   【X_POST】
+ *   【IMAGE_PROMPT】
+ *
+ * 想定フロー：
+ * 1. k1が固定タグ入りtxtをSlackへsource_file送信
+ * 2. Slack Events APIがfile_shared / file_created / message.filesをGASへ送信
+ * 3. GASがSlackファイル本文を取得
+ * 4. 固定タグを解析
+ * 5. はてなブログ下書きを作成
+ * 6. Komachi Blog Bot が画像プロンプトをSlackへ返信
+ * 7. k2が画像をSlackへ送信
+ * 8. GASが画像を取得し、Fotolifeへアップロード
+ * 9. 下書きへ画像を挿入して公開
+ * 10. X投稿用intentリンクをSlackへ返信
+ ************************************/
+
+const CONFIG = {
+  SLACK_CHANNEL_ID: 'C0B5JBG8W4B',
+
+  PROP_SLACK_BOT_TOKEN: 'SLACK_BOT_TOKEN',
+  PROP_HATENA_ID: 'HATENA_ID',
+  PROP_HATENA_BLOG_ID: 'HATENA_BLOG_ID',
+  PROP_HATENA_API_KEY: 'HATENA_API_KEY',
+  PROP_FOTOLIFE_FOLDER: 'FOTOLIFE_FOLDER',
+  PROP_PENDING_ARTICLE: 'PENDING_ARTICLE_JSON',
+
+  REQUIRED_TAGS: [
+    'TITLE',
+    'CATEGORY',
+    'META_DESCRIPTION',
+    'HTML',
+    'X_POST',
+    'IMAGE_PROMPT'
+  ]
+};
+
+function doPost(e) {
+  try {
+    const body = e && e.postData && e.postData.contents ? e.postData.contents : '';
+    const payload = body ? JSON.parse(body) : {};
+
+    if (payload.type === 'url_verification') {
+      return ContentService
+        .createTextOutput(payload.challenge)
+        .setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    if (payload.type !== 'event_callback') {
+      return jsonOk_({ ignored: true, reason: 'not_event_callback' });
+    }
+
+    const eventId = payload.event_id || '';
+    if (eventId && isDuplicateEvent_(eventId)) {
+      return jsonOk_({ ignored: true, reason: 'duplicate_event' });
+    }
+
+    handleSlackEvent_(payload.event || {}, payload);
+    return jsonOk_({ ok: true });
+
+  } catch (err) {
+    console.error('doPost error:', err && err.stack ? err.stack : err);
+    return jsonOk_({ ok: false, error: String(err) });
+  }
+}
+
+function jsonOk_(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function isDuplicateEvent_(eventId) {
+  const cache = CacheService.getScriptCache();
+  const key = 'slack_event_' + eventId;
+  if (cache.get(key)) return true;
+  cache.put(key, '1', 60 * 10);
+  return false;
+}
+
+function handleSlackEvent_(event, payload) {
+  const channelId = event.channel || event.channel_id || CONFIG.SLACK_CHANNEL_ID;
+
+  if (event.type === 'file_shared' || event.type === 'file_created') {
+    const fileId = event.file_id || (event.file && event.file.id);
+    if (!fileId) {
+      postSlackMessage_(channelId, '未完了。\n止まった工程：Slack file_id取得\n理由：file_sharedイベントにfile_idがありません。');
+      return;
+    }
+
+    const file = getSlackFileInfo_(fileId);
+    handleSlackFile_(file, channelId);
+    return;
+  }
+
+  if (event.type === 'message' && event.files && event.files.length) {
+    event.files.forEach(function(file) {
+      handleSlackFile_(file, channelId);
+    });
+    return;
+  }
+}
+
+function handleSlackFile_(file, channelId) {
+  if (!file || !file.id) {
+    postSlackMessage_(channelId, '未完了。\n止まった工程：Slackファイル取得\n理由：Slackファイル情報を取得できませんでした。');
+    return;
+  }
+
+  if (isTextFile_(file)) {
+    handleArticleTxtFile_(file, channelId);
+    return;
+  }
+
+  if (isImageFile_(file)) {
+    handleImageFile_(file, channelId);
+    return;
+  }
+}
+
+function isTextFile_(file) {
+  const name = (file.name || '').toLowerCase();
+  const mimetype = (file.mimetype || '').toLowerCase();
+  const filetype = (file.filetype || '').toLowerCase();
+
+  return (
+    name.endsWith('.txt') ||
+    mimetype.indexOf('text/plain') >= 0 ||
+    filetype === 'text'
+  );
+}
+
+function isImageFile_(file) {
+  const name = (file.name || '').toLowerCase();
+  const mimetype = (file.mimetype || '').toLowerCase();
+  const filetype = (file.filetype || '').toLowerCase();
+
+  return (
+    mimetype.indexOf('image/') === 0 ||
+    ['png', 'jpg', 'jpeg', 'webp'].indexOf(filetype) >= 0 ||
+    name.endsWith('.png') ||
+    name.endsWith('.jpg') ||
+    name.endsWith('.jpeg') ||
+    name.endsWith('.webp')
+  );
+}
+
+function handleArticleTxtFile_(file, channelId) {
+  try {
+    const text = downloadSlackTextFile_(file);
+    if (!text) {
+      postSlackMessage_(channelId, '未完了。\n止まった工程：Slackファイル本文取得\n理由：txt本文を取得できませんでした。');
+      return;
+    }
+
+    const parsed = parseK1FixedTagText_(text);
+
+    if (!parsed.ok) {
+      postSlackMessage_(
+        channelId,
+        [
+          '未完了。',
+          '止まった工程：固定タグチェック',
+          '理由：記事本文内に必要な固定タグが見つかりません。',
+          '',
+          '必要な固定タグ：',
+          '【TITLE】',
+          '【CATEGORY】',
+          '【META_DESCRIPTION】',
+          '【HTML】',
+          '【X_POST】',
+          '【IMAGE_PROMPT】',
+          '',
+          '不足タグ：' + parsed.missing.join(', ')
+        ].join('\n')
+      );
+      return;
+    }
+
+    const article = parsed.article;
+    const draft = createHatenaDraft_(article);
+
+    const pending = {
+      createdAt: new Date().toISOString(),
+      slackFileId: file.id,
+      title: article.title,
+      category: article.category,
+      metaDescription: article.metaDescription,
+      xPost: article.xPost,
+      imagePrompt: article.imagePrompt,
+      editUrl: draft.editUrl,
+      draftUrl: draft.draftUrl || ''
+    };
+
+    PropertiesService
+      .getScriptProperties()
+      .setProperty(CONFIG.PROP_PENDING_ARTICLE, JSON.stringify(pending));
+
+    postSlackMessage_(
+      channelId,
+      [
+        '下書き作成完了。',
+        '',
+        '■画像プロンプト',
+        article.imagePrompt
+      ].join('\n')
+    );
+
+  } catch (err) {
+    console.error('handleArticleTxtFile_ error:', err && err.stack ? err.stack : err);
+    postSlackMessage_(
+      channelId,
+      [
+        '未完了。',
+        '止まった工程：記事txt処理',
+        '理由：' + String(err)
+      ].join('\n')
+    );
+  }
+}
+
+function parseK1FixedTagText_(rawText) {
+  const text = normalizeText_(rawText);
+  const missing = [];
+
+  CONFIG.REQUIRED_TAGS.forEach(function(tag) {
+    if (text.indexOf('【' + tag + '】') < 0) {
+      missing.push(tag);
+    }
+  });
+
+  if (missing.length) {
+    return { ok: false, missing: missing, article: null };
+  }
+
+  const article = {
+    title: extractSingleTagBlock_(text, 'TITLE').trim(),
+    category: extractSingleTagBlock_(text, 'CATEGORY').trim(),
+    metaDescription: extractSingleTagBlock_(text, 'META_DESCRIPTION').trim(),
+    html: extractSingleTagBlock_(text, 'HTML').trim(),
+    xPost: extractSingleTagBlock_(text, 'X_POST').trim(),
+    imagePrompt: extractSingleTagBlock_(text, 'IMAGE_PROMPT').trim()
+  };
+
+  if (!article.title) missing.push('TITLE');
+  if (!article.category) missing.push('CATEGORY');
+  if (!article.metaDescription) missing.push('META_DESCRIPTION');
+  if (!article.html) missing.push('HTML');
+  if (!article.xPost) missing.push('X_POST');
+  if (!article.imagePrompt) missing.push('IMAGE_PROMPT');
+
+  if (missing.length) {
+    return { ok: false, missing: missing, article: null };
+  }
+
+  article.html = decodeSlackEmojiAliases_(article.html);
+  article.xPost = decodeSlackEmojiAliases_(article.xPost);
+  article.imagePrompt = ensureImagePromptHeader_(decodeSlackEmojiAliases_(article.imagePrompt));
+
+  return { ok: true, missing: [], article: article };
+}
+
+function normalizeText_(text) {
+  return String(text || '')
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim();
+}
+
+function extractSingleTagBlock_(text, tag) {
+  const startToken = '【' + tag + '】';
+  const startIndex = text.indexOf(startToken);
+  if (startIndex < 0) return '';
+
+  const bodyStart = startIndex + startToken.length;
+  const nextIndex = findNextTagIndex_(text, bodyStart, tag);
+
+  if (nextIndex < 0) {
+    return text.slice(bodyStart).trim();
+  }
+
+  return text.slice(bodyStart, nextIndex).trim();
+}
+
+function findNextTagIndex_(text, fromIndex, currentTag) {
+  const candidates = CONFIG.REQUIRED_TAGS
+    .concat(['END'])
+    .filter(function(tag) { return tag !== currentTag; })
+    .map(function(tag) {
+      const idx = text.indexOf('【' + tag + '】', fromIndex);
+      return idx >= 0 ? idx : null;
+    })
+    .filter(function(idx) { return idx !== null; });
+
+  if (!candidates.length) return -1;
+  return Math.min.apply(null, candidates);
+}
+
+function ensureImagePromptHeader_(imagePrompt) {
+  const prompt = String(imagePrompt || '').trim();
+  if (prompt.indexOf('情報源画像を参照') === 0) return prompt;
+  return '情報源画像を参照\n' + prompt;
+}
+
+function decodeSlackEmojiAliases_(text) {
+  return String(text || '');
+}
+
+function handleImageFile_(file, channelId) {
+  try {
+    const pendingJson = PropertiesService
+      .getScriptProperties()
+      .getProperty(CONFIG.PROP_PENDING_ARTICLE);
+
+    if (!pendingJson) {
+      postSlackMessage_(
+        channelId,
+        '未完了。\n止まった工程：画像処理\n理由：対応する下書き情報がありません。先にk1の記事txtを処理してください。'
+      );
+      return;
+    }
+
+    const pending = JSON.parse(pendingJson);
+    const imageBlob = downloadSlackBinaryFile_(file);
+    const imageUrl = uploadToFotolife_(imageBlob, pending.title);
+    const publicUrl = insertImageAndPublishHatenaEntry_(pending, imageUrl);
+    const xIntentUrl = createXIntentUrl_(pending.xPost, publicUrl);
+
+    PropertiesService
+      .getScriptProperties()
+      .deleteProperty(CONFIG.PROP_PENDING_ARTICLE);
+
+    postSlackMessage_(
+      channelId,
+      [
+        '公開完了。',
+        '',
+        '<' + xIntentUrl + '|ポストを投稿>',
+        '',
+        publicUrl
+      ].join('\n')
+    );
+
+  } catch (err) {
+    console.error('handleImageFile_ error:', err && err.stack ? err.stack : err);
+    postSlackMessage_(
+      channelId,
+      [
+        '未完了。',
+        '止まった工程：画像処理',
+        '理由：' + String(err)
+      ].join('\n')
+    );
+  }
+}
+
+function getSlackToken_() {
+  const token = PropertiesService
+    .getScriptProperties()
+    .getProperty(CONFIG.PROP_SLACK_BOT_TOKEN);
+
+  if (!token) {
+    throw new Error('Script Properties に SLACK_BOT_TOKEN がありません。');
+  }
+
+  return token;
+}
+
+function getSlackFileInfo_(fileId) {
+  const url = 'https://slack.com/api/files.info?file=' + encodeURIComponent(fileId);
+
+  const res = UrlFetchApp.fetch(url, {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Bearer ' + getSlackToken_()
+    }
+  });
+
+  const json = JSON.parse(res.getContentText());
+  if (!json.ok) {
+    throw new Error('Slack files.info failed: ' + JSON.stringify(json));
+  }
+
+  return json.file;
+}
+
+function downloadSlackTextFile_(file) {
+  const url = file.url_private_download || file.url_private;
+  if (!url) throw new Error('Slack file に url_private_download / url_private がありません。');
+
+  const res = UrlFetchApp.fetch(url, {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Bearer ' + getSlackToken_()
+    }
+  });
+
+  const code = res.getResponseCode();
+  if (code < 200 || code >= 300) {
+    throw new Error('Slack txt download failed: HTTP ' + code + ' / ' + res.getContentText());
+  }
+
+  return res.getContentText('UTF-8');
+}
+
+function downloadSlackBinaryFile_(file) {
+  const url = file.url_private_download || file.url_private;
+  if (!url) throw new Error('Slack file に url_private_download / url_private がありません。');
+
+  const res = UrlFetchApp.fetch(url, {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Bearer ' + getSlackToken_()
+    }
+  });
+
+  const code = res.getResponseCode();
+  if (code < 200 || code >= 300) {
+    throw new Error('Slack image download failed: HTTP ' + code + ' / ' + res.getContentText());
+  }
+
+  const blob = res.getBlob();
+  blob.setName(file.name || ('komachi_image_' + Date.now() + '.png'));
+  return blob;
+}
+
+function postSlackMessage_(channelId, message) {
+  const url = 'https://slack.com/api/chat.postMessage';
+
+  const payload = {
+    channel: channelId || CONFIG.SLACK_CHANNEL_ID,
+    text: message
+  };
+
+  const res = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json; charset=utf-8',
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Bearer ' + getSlackToken_()
+    },
+    payload: JSON.stringify(payload)
+  });
+
+  const json = JSON.parse(res.getContentText());
+  if (!json.ok) {
+    throw new Error('Slack chat.postMessage failed: ' + JSON.stringify(json));
+  }
+
+  return json;
+}
+
+function getHatenaConfig_() {
+  const props = PropertiesService.getScriptProperties();
+
+  const hatenaId = props.getProperty(CONFIG.PROP_HATENA_ID);
+  const blogId = props.getProperty(CONFIG.PROP_HATENA_BLOG_ID);
+  const apiKey = props.getProperty(CONFIG.PROP_HATENA_API_KEY);
+
+  if (!hatenaId) throw new Error('Script Properties に HATENA_ID がありません。');
+  if (!blogId) throw new Error('Script Properties に HATENA_BLOG_ID がありません。');
+  if (!apiKey) throw new Error('Script Properties に HATENA_API_KEY がありません。');
+
+  return {
+    hatenaId: hatenaId,
+    blogId: blogId,
+    apiKey: apiKey
+  };
+}
+
+function createHatenaDraft_(article) {
+  const conf = getHatenaConfig_();
+
+  const endpoint = 'https://blog.hatena.ne.jp/' +
+    encodeURIComponent(conf.hatenaId) + '/' +
+    encodeURIComponent(conf.blogId) +
+    '/atom/entry';
+
+  const entryXml = buildHatenaEntryXml_(article, true);
+
+  const res = UrlFetchApp.fetch(endpoint, {
+    method: 'post',
+    contentType: 'application/xml; charset=UTF-8',
+    payload: entryXml,
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Basic ' + Utilities.base64Encode(conf.hatenaId + ':' + conf.apiKey)
+    }
+  });
+
+  const code = res.getResponseCode();
+  const body = res.getContentText('UTF-8');
+
+  if (code < 200 || code >= 300) {
+    throw new Error('Hatena draft create failed: HTTP ' + code + ' / ' + body);
+  }
+
+  return {
+    editUrl: extractAtomLink_(body, 'edit'),
+    draftUrl: extractAtomLink_(body, 'alternate') || ''
+  };
+}
+
+function insertImageAndPublishHatenaEntry_(pending, imageUrl) {
+  if (!pending.editUrl) {
+    throw new Error('pending.editUrl がありません。');
+  }
+
+  const conf = getHatenaConfig_();
+
+  const currentXml = fetchHatenaEntryXml_(pending.editUrl, conf);
+  const currentHtml = unescapeXml_(extractContentFromEntryXml_(currentXml));
+
+  const imageHtml = [
+    '<div style="margin: 20px 0; text-align: center;">',
+    '<img src="' + escapeHtmlAttr_(imageUrl) + '" alt="' + escapeHtmlAttr_(pending.title) + '" style="max-width: 100%; height: auto; border-radius: 16px;" />',
+    '</div>'
+  ].join('');
+
+  const updatedArticle = {
+    title: pending.title,
+    category: pending.category,
+    metaDescription: pending.metaDescription || '',
+    html: imageHtml + '\n' + currentHtml,
+    xPost: pending.xPost || '',
+    imagePrompt: pending.imagePrompt || ''
+  };
+
+  const updatedXml = buildHatenaEntryXml_(updatedArticle, false);
+
+  const putRes = UrlFetchApp.fetch(pending.editUrl, {
+    method: 'put',
+    contentType: 'application/xml; charset=UTF-8',
+    payload: updatedXml,
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Basic ' + Utilities.base64Encode(conf.hatenaId + ':' + conf.apiKey)
+    }
+  });
+
+  const code = putRes.getResponseCode();
+  const body = putRes.getContentText('UTF-8');
+
+  if (code < 200 || code >= 300) {
+    throw new Error('Hatena publish update failed: HTTP ' + code + ' / ' + body);
+  }
+
+  return extractAtomLink_(body, 'alternate') || '';
+}
+
+function fetchHatenaEntryXml_(editUrl, conf) {
+  const res = UrlFetchApp.fetch(editUrl, {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Basic ' + Utilities.base64Encode(conf.hatenaId + ':' + conf.apiKey)
+    }
+  });
+
+  const code = res.getResponseCode();
+  const body = res.getContentText('UTF-8');
+
+  if (code < 200 || code >= 300) {
+    throw new Error('Hatena entry fetch failed: HTTP ' + code + ' / ' + body);
+  }
+
+  return body;
+}
+
+function buildHatenaEntryXml_(article, isDraft) {
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<entry xmlns="http://www.w3.org/2005/Atom" xmlns:app="http://www.w3.org/2007/app">',
+    '<title>' + escapeXml_(article.title) + '</title>',
+    '<content type="text/html">' + escapeXml_(article.html) + '</content>',
+    buildCategoriesXml_(article.category),
+    '<summary>' + escapeXml_(article.metaDescription || '') + '</summary>',
+    '<app:control><app:draft>' + (isDraft ? 'yes' : 'no') + '</app:draft></app:control>',
+    '</entry>'
+  ].join('');
+}
+
+function buildCategoriesXml_(categoryText) {
+  const categories = String(categoryText || '')
+    .split(/[,\n、]/)
+    .map(function(s) { return s.trim(); })
+    .filter(Boolean);
+
+  return categories
+    .map(function(cat) {
+      return '<category term="' + escapeHtmlAttr_(cat) + '" />';
+    })
+    .join('');
+}
+
+function extractAtomLink_(xml, rel) {
+  const re = new RegExp('<link[^>]+rel=["\\\']' + rel + '["\\\'][^>]+href=["\\\']([^"\\\']+)["\\\']', 'i');
+  const match = String(xml || '').match(re);
+  return match ? unescapeXml_(match[1]) : '';
+}
+
+function extractContentFromEntryXml_(xml) {
+  const match = String(xml || '').match(/<content[^>]*>([\s\S]*?)<\/content>/i);
+  return match ? match[1] : '';
+}
+
+function uploadToFotolife_(blob, title) {
+  const conf = getHatenaConfig_();
+  const folder = PropertiesService
+    .getScriptProperties()
+    .getProperty(CONFIG.PROP_FOTOLIFE_FOLDER) || 'GameBlog';
+
+  const endpoint = 'https://f.hatena.ne.jp/atom/post';
+
+  const imageBase64 = Utilities.base64Encode(blob.getBytes());
+  const imageTitle = title || blob.getName() || ('komachi_' + Date.now());
+
+  const entryXml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<entry xmlns="http://purl.org/atom/ns#">',
+    '<title>' + escapeXml_(imageTitle) + '</title>',
+    '<content mode="base64" type="' + escapeHtmlAttr_(blob.getContentType() || 'image/png') + '">',
+    imageBase64,
+    '</content>',
+    '<dc:subject xmlns:dc="http://purl.org/dc/elements/1.1/">' + escapeXml_(folder) + '</dc:subject>',
+    '</entry>'
+  ].join('');
+
+  const res = UrlFetchApp.fetch(endpoint, {
+    method: 'post',
+    contentType: 'application/x.atom+xml; charset=UTF-8',
+    payload: entryXml,
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Basic ' + Utilities.base64Encode(conf.hatenaId + ':' + conf.apiKey)
+    }
+  });
+
+  const code = res.getResponseCode();
+  const body = res.getContentText('UTF-8');
+
+  if (code < 200 || code >= 300) {
+    throw new Error('Fotolife upload failed: HTTP ' + code + ' / ' + body);
+  }
+
+  const url = extractFotolifeImageUrl_(body);
+  if (!url) {
+    throw new Error('Fotolife upload succeeded but image URL not found: ' + body);
+  }
+
+  return url;
+}
+
+function extractFotolifeImageUrl_(xml) {
+  const text = String(xml || '');
+
+  const imageUrlPatterns = [
+    /<hatena:imageurl>([\s\S]*?)<\/hatena:imageurl>/i,
+    /<link[^>]+rel=["']enclosure["'][^>]+href=["']([^"']+)["']/i,
+    /<link[^>]+type=["']image\/[^"']+["'][^>]+href=["']([^"']+)["']/i,
+    /<link[^>]+href=["']([^"']+\.(?:png|jpg|jpeg|webp)[^"']*)["']/i
+  ];
+
+  for (let i = 0; i < imageUrlPatterns.length; i++) {
+    const match = text.match(imageUrlPatterns[i]);
+    if (match && match[1]) return unescapeXml_(match[1]);
+  }
+
+  return '';
+}
+
+function createXIntentUrl_(xPost, publicUrl) {
+  let post = String(xPost || '').trim();
+
+  if (publicUrl) {
+    if (post.indexOf('{{PUBLIC_URL}}') >= 0) {
+      post = post.replace(/\{\{PUBLIC_URL\}\}/g, publicUrl);
+    } else if (post.indexOf(publicUrl) < 0) {
+      post += '\n\n' + publicUrl;
+    }
+  }
+
+  return 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(post);
+}
+
+function escapeXml_(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeHtmlAttr_(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function unescapeXml_(value) {
+  return String(value || '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
+function testParseK1FixedTagText() {
+  const sample = [
+    '【TITLE】',
+    'テスト記事',
+    '',
+    '【CATEGORY】',
+    'ゲーム機本体,ガジェット,Switch 2',
+    '',
+    '【META_DESCRIPTION】',
+    'メタ説明文',
+    '',
+    '【HTML】',
+    '<div><p>本文</p></div>',
+    '',
+    '【X_POST】',
+    'X本文',
+    '',
+    '【IMAGE_PROMPT】',
+    '情報源画像を参照',
+    '16:9横長のブログ用アイキャッチ画像。'
+  ].join('\n');
+
+  const result = parseK1FixedTagText_(sample);
+  Logger.log(JSON.stringify(result, null, 2));
+}
+
+function showRequiredScriptProperties() {
+  Logger.log(JSON.stringify({
+    SLACK_BOT_TOKEN: 'xoxb-...',
+    HATENA_ID: 'Hatena ID',
+    HATENA_BLOG_ID: 'example.hatenablog.com',
+    HATENA_API_KEY: 'Hatena API Key',
+    FOTOLIFE_FOLDER: 'GameBlog'
+  }, null, 2));
+}
+
+function testSlackMessage() {
+  postSlackMessage_(CONFIG.SLACK_CHANNEL_ID, 'Komachi Blog Bot test');
+}
+
+```
