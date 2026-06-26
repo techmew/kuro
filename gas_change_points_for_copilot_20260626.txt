@@ -1,0 +1,237 @@
+Copilot引き継ぎ用：GAS変更箇所メモ
+
+目的：
+既存GASを全文置換しない。
+Slack Events API、Slackファイル取得、はてなブログ投稿、Fotolife、X投稿リンク生成、トークン設定、既存関数名は触らない。
+変更するのは「固定タグ判定」と「固定タグ抽出」だけ。
+
+現在の問題：
+k1が出す記事txtの固定タグ形式と、GASが探している固定タグ形式がズレていた。
+START / END形式ではなく、GAS側は以下の単独タグを読む構成に統一する。
+
+新しい必須タグ：
+【TITLE】
+【CATEGORY】
+【META_DESCRIPTION】
+【HTML】
+【X_POST】
+【IMAGE_PROMPT】
+
+旧タグ：
+【TITLE_START】
+【TITLE_END】
+【CATEGORY_START】
+【CATEGORY_END】
+【META_START】
+【META_END】
+【META_DESCRIPTION_START】
+【META_DESCRIPTION_END】
+【HTML_START】
+【HTML_END】
+【X_POST_START】
+【X_POST_END】
+【IMAGE_PROMPT_START】
+【IMAGE_PROMPT_END】
+
+やること：
+1. 既存GASの固定タグチェックを以下6タグに統一する
+2. 既存GASの抽出処理を「開始タグから次の固定タグ直前まで」に変更する
+3. START / ENDタグ前提の抽出処理は使わない
+4. 他の処理は絶対に変更しない
+
+差し替え対象の例：
+- validateFixedTags
+- parseFixedTagText
+- extractTag
+- getTaggedValue
+- parseArticleText
+- 「必要な固定タグが見つかりません」を出している周辺処理
+
+追加・差し替え用コード：
+
+```javascript
+const KOMACHI_REQUIRED_TAGS = [
+  'TITLE',
+  'CATEGORY',
+  'META_DESCRIPTION',
+  'HTML',
+  'X_POST',
+  'IMAGE_PROMPT'
+];
+
+function normalizeKomachiText_(text) {
+  return String(text || '')
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim();
+}
+
+function validateKomachiFixedTags_(text) {
+  const body = normalizeKomachiText_(text);
+  const missing = [];
+
+  KOMACHI_REQUIRED_TAGS.forEach(function(tag) {
+    if (body.indexOf('【' + tag + '】') === -1) {
+      missing.push(tag);
+    }
+  });
+
+  return {
+    ok: missing.length === 0,
+    missing: missing
+  };
+}
+
+function extractKomachiTag_(text, tag) {
+  const body = normalizeKomachiText_(text);
+  const startToken = '【' + tag + '】';
+  const startIndex = body.indexOf(startToken);
+
+  if (startIndex === -1) {
+    return '';
+  }
+
+  const contentStart = startIndex + startToken.length;
+  let contentEnd = body.length;
+
+  KOMACHI_REQUIRED_TAGS.forEach(function(nextTag) {
+    if (nextTag === tag) return;
+
+    const nextToken = '【' + nextTag + '】';
+    const nextIndex = body.indexOf(nextToken, contentStart);
+
+    if (nextIndex !== -1 && nextIndex < contentEnd) {
+      contentEnd = nextIndex;
+    }
+  });
+
+  return body.substring(contentStart, contentEnd).trim();
+}
+
+function parseKomachiArticleText_(text) {
+  const validation = validateKomachiFixedTags_(text);
+
+  if (!validation.ok) {
+    throw new Error(
+      '記事本文内に必要な固定タグが見つかりません。不足タグ：' +
+      validation.missing.join(', ')
+    );
+  }
+
+  const article = {
+    title: extractKomachiTag_(text, 'TITLE'),
+    category: extractKomachiTag_(text, 'CATEGORY'),
+    metaDescription: extractKomachiTag_(text, 'META_DESCRIPTION'),
+    html: extractKomachiTag_(text, 'HTML'),
+    xPost: extractKomachiTag_(text, 'X_POST'),
+    imagePrompt: extractKomachiTag_(text, 'IMAGE_PROMPT')
+  };
+
+  const empty = [];
+  if (!article.title) empty.push('TITLE');
+  if (!article.category) empty.push('CATEGORY');
+  if (!article.metaDescription) empty.push('META_DESCRIPTION');
+  if (!article.html) empty.push('HTML');
+  if (!article.xPost) empty.push('X_POST');
+  if (!article.imagePrompt) empty.push('IMAGE_PROMPT');
+
+  if (empty.length > 0) {
+    throw new Error(
+      '固定タグはありますが中身が空です。空タグ：' +
+      empty.join(', ')
+    );
+  }
+
+  return article;
+}
+```
+
+既存GAS内で、記事txt本文を解析している箇所を以下の形にする。
+
+```javascript
+const article = parseKomachiArticleText_(text);
+```
+
+既存変数名に合わせる場合：
+
+```javascript
+const title = article.title;
+const category = article.category;
+const metaDescription = article.metaDescription;
+const html = article.html;
+const xPost = article.xPost;
+const imagePrompt = article.imagePrompt;
+```
+
+注意：
+- META ではなく META_DESCRIPTION を使う
+- TITLE_START などのSTART/END形式は使わない
+- IMAGE_PROMPT は次の固定タグがなければファイル末尾まで読む
+- HTML本文内に <div> や <p> が大量にあっても、固定タグ抽出には影響させない
+- Slack送信処理は変更しない
+- Slack Events APIのdoPostは変更しない
+- Hatena投稿処理は変更しない
+- Fotolife処理は変更しない
+- X投稿リンク処理は変更しない
+- Script Propertiesは変更しない
+- トークン名は変更しない
+
+k1側の出力形式は以下に統一済み。
+
+```text
+【TITLE】
+記事タイトル
+
+【CATEGORY】
+カテゴリ
+
+【META_DESCRIPTION】
+メタ説明文
+
+【HTML】
+HTML本文
+
+【X_POST】
+X投稿本文
+
+【IMAGE_PROMPT】
+画像プロンプト
+```
+
+テスト用txt：
+
+```text
+【TITLE】
+テスト記事
+
+【CATEGORY】
+ゲーム機本体,ガジェット,Switch 2
+
+【META_DESCRIPTION】
+テスト用メタ説明文
+
+【HTML】
+<div><p>テスト本文です。</p></div>
+
+【X_POST】
+テスト投稿本文
+
+【IMAGE_PROMPT】
+情報源画像を参照
+16:9横長のブログ用アイキャッチ画像。
+```
+
+期待結果：
+- 固定タグ不足エラーが出ない
+- article.title に「テスト記事」が入る
+- article.category に「ゲーム機本体,ガジェット,Switch 2」が入る
+- article.metaDescription に「テスト用メタ説明文」が入る
+- article.html にHTML本文が入る
+- article.xPost にX投稿本文が入る
+- article.imagePrompt に画像プロンプトが入る
+
+要点：
+GAS全文置換は禁止。
+固定タグの判定・抽出関数だけ差し替え。
+既存の投稿・Slack・認証周りは触らない。
