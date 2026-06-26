@@ -1,0 +1,200 @@
+【GAS修正 引き継ぎ書】
+目的：
+ChatGPTがSlackへ記事txtファイルを直接アップロードする運用をやめる。
+今後は、ChatGPTが固定タグ入り記事txtをGoogle Driveへ保存し、そのDrive URLだけをSlackへ送信する。
+GAS側はSlackメッセージ内のDrive URLを読み取り、Drive上のtxt本文を取得して、従来の記事txt本文として処理する。
+
+【新しいSlack投稿形式】
+ChatGPTはSlackへ以下の2行だけ送る。
+
+ARTICLE_TXT_DRIVE_URL
+https://drive.google.com/...
+
+または
+
+ARTICLE_TXT_DRIVE_URL
+https://docs.google.com/document/d/...
+
+【GAS側で追加する処理】
+Slackイベントを受け取ったとき、message本文に ARTICLE_TXT_DRIVE_URL が含まれている場合は、新しい記事txt受信処理として扱う。
+
+処理順：
+1. Slack message.text を取得
+2. text内に ARTICLE_TXT_DRIVE_URL があるか確認
+3. 次行のGoogle Drive URLを取得
+4. Google Drive URLからfileIdまたはdocumentIdを抽出
+5. Drive上のtxt本文を取得
+6. 取得した本文を、旧Slackファイル本文と同じ処理関数へ渡す
+7. 以後は既存の下書き作成処理をそのまま使う
+
+【重要】
+既存のSlackファイルアップロード処理を全削除しない。
+画像ファイル受信処理は今後も使う可能性があるため残す。
+変更対象は「記事txt受信」だけ。
+
+【分岐条件】
+Slack message.text が以下を含む場合：
+
+ARTICLE_TXT_DRIVE_URL
+
+この場合はSlackファイルイベントではなく、Drive URL記事txt処理へ進める。
+
+【Drive URL抽出ルール】
+対応するURL形式：
+
+https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+https://docs.google.com/document/d/DOCUMENT_ID/edit?usp=sharing
+https://docs.google.com/document/d/DOCUMENT_ID/edit?usp=drivesdk
+https://drive.google.com/open?id=FILE_ID
+
+抽出できない場合はSlackへエラー返信する。
+
+【本文取得方法】
+Google Driveのtxtファイルなら：
+
+DriveApp.getFileById(fileId).getBlob().getDataAsString('UTF-8')
+
+Google Docs形式なら：
+
+DocumentApp.openById(fileId).getBody().getText()
+
+ただし、ChatGPT側はUTF-8プレーンテキストtxt保存を前提にしている。
+基本はDriveAppで取得できるtxtファイルとして扱う。
+
+【既存処理への接続】
+旧処理でSlackファイル本文を取得したあとに呼んでいた関数へ、Driveから取得した本文を渡す。
+
+例：
+旧：
+const articleText = fetchSlackFileText(fileInfo);
+processArticleText(articleText);
+
+新：
+const articleText = fetchDriveTextFromUrl(driveUrl);
+processArticleText(articleText);
+
+processArticleText以降は原則変更しない。
+
+【追加する関数例】
+
+function isArticleTxtDriveUrlMessage(text) {
+  return text && text.indexOf('ARTICLE_TXT_DRIVE_URL') !== -1;
+}
+
+function extractDriveUrlFromSlackText(text) {
+  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const markerIndex = lines.indexOf('ARTICLE_TXT_DRIVE_URL');
+
+  if (markerIndex === -1) {
+    throw new Error('ARTICLE_TXT_DRIVE_URL marker not found');
+  }
+
+  const url = lines[markerIndex + 1];
+
+  if (!url || !/^https:\/\/(drive|docs)\.google\.com\//.test(url)) {
+    throw new Error('Google Drive URL not found after marker');
+  }
+
+  return url;
+}
+
+function extractGoogleFileId(url) {
+  let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) return match[1];
+
+  match = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) return match[1];
+
+  throw new Error('Google Drive file ID could not be extracted');
+}
+
+function fetchDriveTextFromUrl(url) {
+  const fileId = extractGoogleFileId(url);
+
+  try {
+    const file = DriveApp.getFileById(fileId);
+    const mimeType = file.getMimeType();
+
+    if (mimeType === MimeType.GOOGLE_DOCS) {
+      return DocumentApp.openById(fileId).getBody().getText();
+    }
+
+    return file.getBlob().getDataAsString('UTF-8');
+
+  } catch (e) {
+    throw new Error('Failed to fetch Drive text: ' + e.message);
+  }
+}
+
+【Slackイベント処理への追加例】
+
+function handleSlackMessageEvent(event) {
+  const text = event.text || '';
+
+  if (isArticleTxtDriveUrlMessage(text)) {
+    try {
+      const driveUrl = extractDriveUrlFromSlackText(text);
+      const articleText = fetchDriveTextFromUrl(driveUrl);
+
+      // ここに旧Slackファイル本文処理と同じ関数を呼ぶ
+      processArticleText(articleText, event);
+
+      return;
+
+    } catch (e) {
+      postSlackMessage(
+        event.channel,
+        '未完了。\n止まった工程：Drive URL記事txt取得\n理由：' + e.message
+      );
+      return;
+    }
+  }
+
+  // 既存のSlackファイル処理、画像処理、その他処理はこの下に残す
+}
+
+【GAS側で必要な権限】
+DriveAppを使うため、Apps ScriptにGoogle Drive読み取り権限が必要。
+DocumentAppを使う場合はGoogle Docs読み取り権限も必要。
+
+必要になる可能性が高いスコープ：
+https://www.googleapis.com/auth/drive.readonly
+https://www.googleapis.com/auth/documents.readonly
+
+既存GASでDriveAppを使っている場合は追加承認だけで済む可能性あり。
+
+【エラー時Slack返信】
+Drive URLが取れない場合：
+
+未完了。
+止まった工程：Drive URL取得
+理由：Slack本文のARTICLE_TXT_DRIVE_URLの次行にGoogle Drive URLがありません。
+
+Drive本文が読めない場合：
+
+未完了。
+止まった工程：Drive本文取得
+理由：Google Driveのtxt本文を取得できませんでした。
+必要な対応：Drive共有権限、GAS実行アカウントのDriveアクセス権限、URL形式を確認してください。
+
+固定タグが足りない場合：
+
+未完了。
+止まった工程：固定タグ解析
+理由：Driveから取得した本文に必要な固定タグが不足しています。
+必要な対応：ChatGPT側の固定タグ入りtxt本文を確認してください。
+
+【維持する既存処理】
+以下は変更しない。
+
+- 固定タグ解析処理
+- はてなブログ下書き作成処理
+- 画像プロンプト返信処理
+- 画像ファイル受信処理
+- はてなフォトライフアップロード処理
+- 公開処理
+- X投稿用リンク返却処理
+
+【最重要】
+ARTICLE_TXT_DRIVE_URL処理で取得したDrive本文は、旧Slackファイル本文と同じ扱いにする。
+GAS全体を書き換えず、入口だけを「Slackファイル本文取得」から「Drive URL本文取得」に差し替える。
